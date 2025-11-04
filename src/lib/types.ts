@@ -18,7 +18,6 @@ export interface Extension {
   number: string;
   name: string;
   queue_id: string | null;
-  email: string | null;
   department: string | null;
   status: ExtensionStatus;
   metadata: Record<string, any>;

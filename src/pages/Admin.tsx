@@ -9,6 +9,7 @@ import { QueuesManager } from '@/components/admin/QueuesManager';
 import { AuditLogsViewer } from '@/components/admin/AuditLogsViewer';
 import { LogOut } from 'lucide-react';
 import { logout } from '@/lib/storage';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -41,10 +42,13 @@ export default function Admin() {
                 Bem-vindo, {user.full_name}
               </p>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
-            </Button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button variant="outline" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+            </div>
           </div>
         </div>
       </header>

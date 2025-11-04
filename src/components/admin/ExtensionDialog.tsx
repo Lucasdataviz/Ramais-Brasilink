@@ -35,7 +35,6 @@ const extensionSchema = z.object({
   number: z.string().min(1, 'Número é obrigatório'),
   name: z.string().min(1, 'Nome é obrigatório'),
   queue_id: z.string().nullable(),
-  email: z.string().email('Email inválido').or(z.literal('')),
   department: z.string().nullable(),
   status: z.enum(['active', 'inactive', 'maintenance']),
 });
@@ -61,7 +60,6 @@ export const ExtensionDialog = ({
       number: '',
       name: '',
       queue_id: null,
-      email: '',
       department: '',
       status: 'active',
     },
@@ -73,7 +71,6 @@ export const ExtensionDialog = ({
         number: extension.number,
         name: extension.name,
         queue_id: extension.queue_id,
-        email: extension.email || '',
         department: extension.department || '',
         status: extension.status,
       });
@@ -82,7 +79,6 @@ export const ExtensionDialog = ({
         number: '',
         name: '',
         queue_id: null,
-        email: '',
         department: '',
         status: 'active',
       });
@@ -96,7 +92,6 @@ export const ExtensionDialog = ({
           number: data.number,
           name: data.name,
           queue_id: data.queue_id,
-          email: data.email || null,
           department: data.department || null,
           status: data.status,
           metadata: extension.metadata,
@@ -107,7 +102,6 @@ export const ExtensionDialog = ({
           number: data.number,
           name: data.name,
           queue_id: data.queue_id,
-          email: data.email || null,
           department: data.department || null,
           status: data.status,
           metadata: {},
@@ -187,24 +181,6 @@ export const ExtensionDialog = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="joao.silva@empresa.com"
-                      {...field}
-                    />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

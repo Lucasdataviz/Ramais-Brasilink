@@ -2,7 +2,7 @@ import { Extension, Queue } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, Mail, Copy } from 'lucide-react';
+import { Phone, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ExtensionCardProps {
@@ -70,18 +70,6 @@ export const ExtensionCard = ({ extension, queue }: ExtensionCardProps) => {
           </Button>
         </div>
 
-        {extension.email && (
-          <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            <a
-              href={`mailto:${extension.email}`}
-              className="text-sm text-primary hover:underline"
-            >
-              {extension.email}
-            </a>
-          </div>
-        )}
-
         {queue && (
           <div className="pt-2 border-t border-border">
             <span
@@ -94,23 +82,6 @@ export const ExtensionCard = ({ extension, queue }: ExtensionCardProps) => {
               {queue.name}
             </span>
           </div>
-        )}
-      </div>
-
-      <div className="mt-4 flex gap-2">
-        <Button variant="default" size="sm" asChild className="flex-1">
-          <a href={`tel:${extension.number}`}>
-            <Phone className="h-4 w-4 mr-2" />
-            Ligar
-          </a>
-        </Button>
-        {extension.email && (
-          <Button variant="outline" size="sm" asChild className="flex-1">
-            <a href={`mailto:${extension.email}`}>
-              <Mail className="h-4 w-4 mr-2" />
-              Email
-            </a>
-          </Button>
         )}
       </div>
     </Card>

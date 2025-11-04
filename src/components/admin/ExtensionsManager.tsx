@@ -112,14 +112,13 @@ export const ExtensionsManager = () => {
               <TableHead>Fila</TableHead>
               <TableHead>Departamento</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Email</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredExtensions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   Nenhum ramal encontrado
                 </TableCell>
               </TableRow>
@@ -133,7 +132,6 @@ export const ExtensionsManager = () => {
                   <TableCell>{getQueueName(extension.queue_id)}</TableCell>
                   <TableCell>{extension.department || '-'}</TableCell>
                   <TableCell>{getStatusBadge(extension.status)}</TableCell>
-                  <TableCell className="text-sm">{extension.email || '-'}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"

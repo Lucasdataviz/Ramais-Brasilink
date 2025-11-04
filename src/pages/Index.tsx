@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Phone, Search, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Index = () => {
   const { extensions, loading } = useRealtimeExtensions();
@@ -42,12 +43,15 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            <Button variant="outline" asChild>
-              <Link to="/admin/login">
-                <Lock className="h-4 w-4 mr-2" />
-                Admin
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button variant="outline" asChild>
+                <Link to="/admin/login">
+                  <Lock className="h-4 w-4 mr-2" />
+                  Admin
+                </Link>
+              </Button>
+            </div>
           </div>
 
           <div className="relative max-w-xl">
