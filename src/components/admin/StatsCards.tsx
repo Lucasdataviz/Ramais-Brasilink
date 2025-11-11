@@ -1,61 +1,95 @@
-import { useMemo } from 'react';
-import { useRealtimeExtensions } from '@/hooks/useRealtimeData';
+import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Phone, Activity, Building2 } from 'lucide-react';
+import { getRamais } from '@/lib/supabase';
+import { Ramal } from '@/lib/types';
 
 export const StatsCards = () => {
-  const { extensions } = useRealtimeExtensions();
+  const [ramais, setRamais] = useState<Ramal[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const stats = useMemo(() => {
-    const activeCount = extensions.filter(e => e.status === 'active').length;
-    const departmentsCount = new Set(extensions.map(e => e.department).filter(Boolean)).size;
-    
-    return {
-      total: extensions.length,
-      active: activeCount,
-      departments: departmentsCount,
-    };
-  }, [extensions]);
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const data = await getRamais();
+      setRamais(data);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calcular estatísticas
+  const totalRamais = ramais.length;
+  const ramaisAtivos = ramais.filter(r => r.status === 'ativo').length;
+  const departamentos = [...new Set(ramais.map(r => r.departamento))].length;
+
+  if (loading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="border-2 shadow-md">
+            <CardContent className="p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-muted rounded w-1/2 mb-2"></div>
+                <div className="h-8 bg-muted rounded w-1/3"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card className="border hover:shadow transition-shadow">
+    <div className="grid gap-4 md:grid-cols-3">
+      <Card className="border-2 shadow-md hover:shadow-lg transition-shadow">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total de Ramais</p>
-              <p className="text-3xl font-bold mt-2">{stats.total}</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Total de Ramais
+              </p>
+              <h3 className="text-3xl font-bold mt-2">{totalRamais}</h3>
             </div>
-            <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
-              <Phone className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div className="p-3 rounded-full bg-blue-500/10">
+              <Phone className="h-6 w-6 text-blue-500" />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border hover:shadow transition-shadow">
+      <Card className="border-2 shadow-md hover:shadow-lg transition-shadow">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Ramais Ativos</p>
-              <p className="text-3xl font-bold mt-2">{stats.active}</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Ramais Ativos
+              </p>
+              <h3 className="text-3xl font-bold mt-2">{ramaisAtivos}</h3>
             </div>
-            <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
-              <Activity className="h-6 w-6 text-green-600 dark:text-green-400" />
+            <div className="p-3 rounded-full bg-green-500/10">
+              <Activity className="h-6 w-6 text-green-500" />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border hover:shadow transition-shadow">
+      <Card className="border-2 shadow-md hover:shadow-lg transition-shadow">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Departamentos</p>
-              <p className="text-3xl font-bold mt-2">{stats.departments}</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Departamentos
+              </p>
+              <h3 className="text-3xl font-bold mt-2">{departamentos}</h3>
             </div>
-            <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
-              <Building2 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            <div className="p-3 rounded-full bg-purple-500/10">
+              <Building2 className="h-6 w-6 text-purple-500" />
             </div>
           </div>
         </CardContent>
@@ -63,4 +97,3 @@ export const StatsCards = () => {
     </div>
   );
 };
-

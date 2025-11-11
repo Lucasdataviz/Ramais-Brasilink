@@ -5,12 +5,11 @@ import { AdminUser } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ExtensionsManager } from '@/components/admin/ExtensionsManager';
+import { RamaisManager } from '@/components/admin/RamaisManager';
 import { AuditLogsViewer } from '@/components/admin/AuditLogsViewer';
 import { StatsCards } from '@/components/admin/StatsCards';
 import { UsersManager } from '@/components/admin/UsersManager';
-import { UsersConfigViewer } from '@/components/admin/UsersConfigViewer';
-import { LogOut, Home, Settings, Phone, FileText, UserCircle, Settings2 } from 'lucide-react';
+import { LogOut, Home, Settings, Phone, FileText, UserCircle } from 'lucide-react';
 import { logout } from '@/lib/storage';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -74,15 +73,11 @@ export default function Admin() {
           <StatsCards />
         </div>
 
-        <Tabs defaultValue="extensions" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
-            <TabsTrigger value="extensions" className="flex items-center gap-2">
+        <Tabs defaultValue="ramais" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+            <TabsTrigger value="ramais" className="flex items-center gap-2">
               <Phone className="h-4 w-4" />
               Ramais
-            </TabsTrigger>
-            <TabsTrigger value="configs" className="flex items-center gap-2">
-              <Settings2 className="h-4 w-4" />
-              Configurações
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-2">
               <UserCircle className="h-4 w-4" />
@@ -94,22 +89,8 @@ export default function Admin() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="extensions" className="space-y-4">
-            <Card className="border">
-              <CardHeader>
-                <CardTitle>Gerenciar Ramais</CardTitle>
-                <CardDescription>
-                  Adicione, edite ou remova ramais do sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ExtensionsManager />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="configs" className="space-y-4">
-            <UsersConfigViewer />
+          <TabsContent value="ramais" className="space-y-4">
+            <RamaisManager />
           </TabsContent>
 
           <TabsContent value="users" className="space-y-4">
