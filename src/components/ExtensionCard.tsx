@@ -1,4 +1,4 @@
-import { Extension, Queue } from '@/lib/types';
+import { Extension } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,10 +7,9 @@ import { toast } from 'sonner';
 
 interface ExtensionCardProps {
   extension: Extension;
-  queue?: Queue;
 }
 
-export const ExtensionCard = ({ extension, queue }: ExtensionCardProps) => {
+export const ExtensionCard = ({ extension }: ExtensionCardProps) => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copiado!');
@@ -43,46 +42,36 @@ export const ExtensionCard = ({ extension, queue }: ExtensionCardProps) => {
   };
 
   return (
-    <Card className="p-6 hover:shadow-lg transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-foreground">{extension.name}</h3>
-          <p className="text-sm text-muted-foreground">{extension.department}</p>
+    <Card className="p-4 hover:shadow-md transition-shadow border">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-semibold text-foreground truncate">
+            {extension.name}
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1 truncate">{extension.department}</p>
         </div>
-        <Badge className={getStatusColor(extension.status)}>
+        <Badge className={`${getStatusColor(extension.status)} ml-2 shrink-0`}>
           {getStatusLabel(extension.status)}
         </Badge>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Phone className="h-4 w-4 text-muted-foreground" />
-          <span className="text-lg font-mono font-semibold text-foreground">
-            {extension.number}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => copyToClipboard(extension.number)}
-            className="ml-auto"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {queue && (
-          <div className="pt-2 border-t border-border">
-            <span
-              className="inline-block px-2 py-1 rounded text-xs font-medium"
-              style={{
-                backgroundColor: queue.color + '20',
-                color: queue.color,
-              }}
-            >
-              {queue.name}
-            </span>
-          </div>
-        )}
+      <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
+        <Phone className="h-4 w-4 text-muted-foreground" />
+        <span className="text-lg font-mono font-semibold text-foreground flex-1">
+          {extension.number}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            copyToClipboard(extension.number);
+          }}
+          className="shrink-0 h-7 w-7 p-0"
+          title="Copiar ramal"
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </Button>
       </div>
     </Card>
   );

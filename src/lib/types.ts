@@ -17,12 +17,22 @@ export interface Extension {
   id: string;
   number: string;
   name: string;
-  queue_id: string | null;
-  department: string | null;
+  department: string;
   status: ExtensionStatus;
   metadata: Record<string, any>;
   created_at: string;
   updated_at: string;
+}
+
+export interface UserSipConfig {
+  name?: string;
+  server?: string;
+  username?: string;
+  domain?: string;
+  login?: string;
+  password?: string;
+  port?: number;
+  protocol?: string;
 }
 
 export interface AdminUser {
@@ -31,6 +41,7 @@ export interface AdminUser {
   email: string;
   role: UserRole;
   last_login: string | null;
+  sip_config?: UserSipConfig;
   created_at: string;
   updated_at: string;
 }

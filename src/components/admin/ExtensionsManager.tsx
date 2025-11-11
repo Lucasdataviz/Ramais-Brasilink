@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useRealtimeExtensions, useRealtimeQueues } from '@/hooks/useRealtimeData';
+import { useRealtimeExtensions } from '@/hooks/useRealtimeData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
@@ -29,7 +29,6 @@ import {
 
 export const ExtensionsManager = () => {
   const { extensions, loading } = useRealtimeExtensions();
-  const { queues } = useRealtimeQueues();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingExtension, setEditingExtension] = useState<Extension | undefined>();
@@ -58,10 +57,6 @@ export const ExtensionsManager = () => {
     }
   };
 
-  const getQueueName = (queueId: string | null) => {
-    if (!queueId) return '-';
-    return queues.find((q) => q.id === queueId)?.name || '-';
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -109,7 +104,6 @@ export const ExtensionsManager = () => {
             <TableRow>
               <TableHead>Número</TableHead>
               <TableHead>Nome</TableHead>
-              <TableHead>Fila</TableHead>
               <TableHead>Departamento</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -118,7 +112,7 @@ export const ExtensionsManager = () => {
           <TableBody>
             {filteredExtensions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
                   Nenhum ramal encontrado
                 </TableCell>
               </TableRow>
@@ -129,7 +123,6 @@ export const ExtensionsManager = () => {
                     {extension.number}
                   </TableCell>
                   <TableCell>{extension.name}</TableCell>
-                  <TableCell>{getQueueName(extension.queue_id)}</TableCell>
                   <TableCell>{extension.department || '-'}</TableCell>
                   <TableCell>{getStatusBadge(extension.status)}</TableCell>
                   <TableCell className="text-right">
@@ -159,7 +152,6 @@ export const ExtensionsManager = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         extension={editingExtension}
-        queues={queues}
       />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

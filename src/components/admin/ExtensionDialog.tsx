@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Extension, Queue } from '@/lib/types';
+import { Extension } from '@/lib/types';
 import { addExtension, updateExtension } from '@/lib/storage';
 import { toast } from 'sonner';
 import {
@@ -34,8 +34,7 @@ import { Button } from '@/components/ui/button';
 const extensionSchema = z.object({
   number: z.string().min(1, 'Número é obrigatório'),
   name: z.string().min(1, 'Nome é obrigatório'),
-  queue_id: z.string().nullable(),
-  department: z.string().nullable(),
+  department: z.string().min(1, 'Departamento é obrigatório'),
   status: z.enum(['active', 'inactive', 'maintenance']),
 });
 
@@ -45,21 +44,18 @@ interface ExtensionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   extension?: Extension;
-  queues: Queue[];
 }
 
 export const ExtensionDialog = ({
   open,
   onOpenChange,
   extension,
-  queues,
 }: ExtensionDialogProps) => {
   const form = useForm<ExtensionFormData>({
     resolver: zodResolver(extensionSchema),
     defaultValues: {
       number: '',
       name: '',
-      queue_id: null,
       department: '',
       status: 'active',
     },
@@ -70,7 +66,6 @@ export const ExtensionDialog = ({
       form.reset({
         number: extension.number,
         name: extension.name,
-        queue_id: extension.queue_id,
         department: extension.department || '',
         status: extension.status,
       });
@@ -78,7 +73,6 @@ export const ExtensionDialog = ({
       form.reset({
         number: '',
         name: '',
-        queue_id: null,
         department: '',
         status: 'active',
       });
@@ -91,8 +85,7 @@ export const ExtensionDialog = ({
         updateExtension(extension.id, {
           number: data.number,
           name: data.name,
-          queue_id: data.queue_id,
-          department: data.department || null,
+          department: data.department,
           status: data.status,
           metadata: extension.metadata,
         });
@@ -101,8 +94,7 @@ export const ExtensionDialog = ({
         addExtension({
           number: data.number,
           name: data.name,
-          queue_id: data.queue_id,
-          department: data.department || null,
+          department: data.department,
           status: data.status,
           metadata: {},
         });
@@ -160,43 +152,14 @@ export const ExtensionDialog = ({
 
             <FormField
               control={form.control}
-              name="queue_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fila</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value || undefined}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma fila" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {queues.map((queue) => (
-                        <SelectItem key={queue.id} value={queue.id}>
-                          {queue.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="department"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Departamento</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Vendas"
+                      placeholder="Administrativo, Ouvidoria, Cobrança, Helpdesk, Upcall"
                       {...field}
-                      value={field.value || ''}
                     />
                   </FormControl>
                   <FormMessage />

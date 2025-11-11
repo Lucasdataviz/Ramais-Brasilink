@@ -1,4 +1,4 @@
-import { Extension, Queue, AdminUser, AuditLog, AuditAction } from './types';
+import { Extension, Queue, AdminUser, AuditLog, AuditAction, ExtensionStatus } from './types';
 
 const STORAGE_KEYS = {
   EXTENSIONS: 'extensions',
@@ -252,110 +252,93 @@ export const logAudit = (
   setAuditLogs(logs.slice(0, 1000)); // Keep last 1000 logs
 };
 
+// Admin Users - Update function
+export const updateAdminUser = (id: string, updates: Partial<AdminUser>): AdminUser | null => {
+  const users = getAdminUsers();
+  const index = users.findIndex(u => u.id === id);
+  
+  if (index === -1) return null;
+  
+  const oldUser = users[index];
+  const updatedUser = {
+    ...oldUser,
+    ...updates,
+    id: oldUser.id,
+    created_at: oldUser.created_at,
+    updated_at: now(),
+  };
+  
+  users[index] = updatedUser;
+  setAdminUsers(users);
+  
+  logAudit('UPDATE', 'admin_users', id, oldUser, updatedUser);
+  
+  return updatedUser;
+};
+
 // Initialize with seed data
 export const initializeSeedData = (): void => {
-  if (getQueues().length === 0) {
-    const queues: Queue[] = [
-      {
-        id: generateId(),
-        name: 'Vendas',
-        description: 'Equipe comercial',
-        color: '#3b82f6',
-        icon: 'phone',
-        order_index: 0,
-        created_at: now(),
-        updated_at: now(),
-      },
-      {
-        id: generateId(),
-        name: 'Suporte',
-        description: 'Atendimento ao cliente',
-        color: '#10b981',
-        icon: 'headphones',
-        order_index: 1,
-        created_at: now(),
-        updated_at: now(),
-      },
-      {
-        id: generateId(),
-        name: 'Financeiro',
-        description: 'Departamento financeiro',
-        color: '#f59e0b',
-        icon: 'dollar-sign',
-        order_index: 2,
-        created_at: now(),
-        updated_at: now(),
-      },
-      {
-        id: generateId(),
-        name: 'TI',
-        description: 'Tecnologia da informação',
-        color: '#8b5cf6',
-        icon: 'laptop',
-        order_index: 3,
-        created_at: now(),
-        updated_at: now(),
-      },
+  if (getExtensions().length === 0) {
+    const extensionsData = [
+      { department: 'Administrativo', name: 'Nailly', number: '3283000' },
+      { department: 'Administrativo', name: 'Claudia', number: '3283001' },
+      { department: 'Administrativo', name: 'Marcileia', number: '3283002' },
+      { department: 'Administrativo', name: 'Sup Maria', number: '3284002' },
+      { department: 'Administrativo', name: 'Sup Josevanio', number: '3285000' },
+      { department: 'Administrativo', name: 'Lucas Silva', number: '3285001' },
+      { department: 'Administrativo', name: 'Pedro Vitor', number: '3285002' },
+      { department: 'Administrativo', name: 'Ednalda', number: '3285003' },
+      { department: 'Administrativo', name: 'Izabella', number: '3285004' },
+      { department: 'Administrativo', name: 'Thiago', number: '3285006' },
+      { department: 'Administrativo', name: 'Patrícia Miranda', number: '3285007' },
+      { department: 'Administrativo', name: 'Rhanya', number: '3285008' },
+      { department: 'Administrativo', name: 'Bruno', number: '3285009' },
+      { department: 'Administrativo', name: 'Sup Daiane', number: '3285010' },
+      { department: 'Administrativo', name: 'Sup Jardel', number: '3285011' },
+      { department: 'Administrativo', name: 'Sup Roney Fernando', number: '3285012' },
+      { department: 'Administrativo', name: 'Anna Julia', number: '3285013' },
+      { department: 'Administrativo', name: 'Geirla', number: '3285014' },
+      { department: 'Administrativo', name: 'Faturamento', number: '3285015' },
+      { department: 'Administrativo', name: 'Geniffer', number: '3285018' },
+      { department: 'Administrativo', name: 'Camilla', number: '3285020' },
+      { department: 'Administrativo', name: 'Manuel Silva', number: '3285021' },
+      { department: 'Administrativo', name: 'Gabriel', number: '3285022' },
+      { department: 'Administrativo', name: 'Floriano', number: '3285023' },
+      { department: 'Administrativo', name: 'LAIANE', number: '3285024' },
+      { department: 'Administrativo', name: 'William', number: '3285025' },
+      { department: 'Administrativo', name: 'Sup Jarquiel', number: '3285026' },
+      { department: 'Administrativo', name: 'Rodolfo', number: '3285027' },
+      { department: 'Administrativo', name: 'Dani', number: '3286000' },
+      { department: 'Administrativo', name: 'Caixa Viçosa', number: '3286001' },
+      { department: 'Ouvidoria', name: 'Glauciane', number: '3284000' },
+      { department: 'Ouvidoria', name: 'Byanca', number: '3284001' },
+      { department: 'Ouvidoria', name: 'Lady Daiane', number: '3284003' },
+      { department: 'Cobrança', name: 'Lucielia', number: '3282000' },
+      { department: 'Cobrança', name: 'Paloma', number: '3282001' },
+      { department: 'Cobrança', name: 'Jessya', number: '3282002' },
+      { department: 'Cobrança', name: 'Laynara', number: '3282003' },
+      { department: 'Helpdesk', name: 'Lya Castro', number: '3281002' },
+      { department: 'Helpdesk', name: 'Josue', number: '3281005' },
+      { department: 'Helpdesk', name: 'Victor Hugo', number: '3281008' },
+      { department: 'Helpdesk', name: 'TASSYANE', number: '3281009' },
+      { department: 'Helpdesk', name: 'Elane', number: '3281011' },
+      { department: 'Helpdesk', name: 'Hidaiara', number: '3281012' },
+      { department: 'Helpdesk', name: 'Patrício Gabriel', number: '3281013' },
+      { department: 'Upcall', name: 'UPKLL', number: '3281006' },
+      { department: 'Upcall', name: 'upcall 2', number: '3281007' },
     ];
-    setQueues(queues);
     
-    const extensions: Extension[] = [
-      {
-        id: generateId(),
-        number: '1001',
-        name: 'João Silva',
-        queue_id: queues[0].id,
-        department: 'Vendas',
-        status: 'active',
-        metadata: {},
-        created_at: now(),
-        updated_at: now(),
-      },
-      {
-        id: generateId(),
-        number: '1002',
-        name: 'Maria Santos',
-        queue_id: queues[0].id,
-        department: 'Vendas',
-        status: 'active',
-        metadata: {},
-        created_at: now(),
-        updated_at: now(),
-      },
-      {
-        id: generateId(),
-        number: '2001',
-        name: 'Pedro Oliveira',
-        queue_id: queues[1].id,
-        department: 'Suporte',
-        status: 'active',
-        metadata: {},
-        created_at: now(),
-        updated_at: now(),
-      },
-      {
-        id: generateId(),
-        number: '3001',
-        name: 'Ana Costa',
-        queue_id: queues[2].id,
-        department: 'Financeiro',
-        status: 'active',
-        metadata: {},
-        created_at: now(),
-        updated_at: now(),
-      },
-      {
-        id: generateId(),
-        number: '4001',
-        name: 'Carlos Lima',
-        queue_id: queues[3].id,
-        department: 'TI',
-        status: 'active',
-        metadata: {},
-        created_at: now(),
-        updated_at: now(),
-      },
-    ];
+    const extensions: Extension[] = extensionsData.map((ext) => ({
+      id: generateId(),
+      number: ext.number,
+      name: ext.name,
+      department: ext.department,
+      status: 'active' as ExtensionStatus,
+      metadata: {},
+      created_at: now(),
+      updated_at: now(),
+    }));
+    
     setExtensions(extensions);
     
     const adminUser: AdminUser = {
@@ -364,6 +347,14 @@ export const initializeSeedData = (): void => {
       email: 'admin@empresa.com',
       role: 'super_admin',
       last_login: null,
+      sip_config: {
+        name: 'Jardel',
+        server: 'tip6.npxtech.com.br',
+        username: '3283000',
+        domain: 'tip6.npxtech.com.br',
+        login: '3283000',
+        password: 'GRRLxzTbd0',
+      },
       created_at: now(),
       updated_at: now(),
     };

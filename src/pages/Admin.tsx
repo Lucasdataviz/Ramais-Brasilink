@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { getCurrentUser } from '@/lib/storage';
 import { AdminUser } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExtensionsManager } from '@/components/admin/ExtensionsManager';
-import { QueuesManager } from '@/components/admin/QueuesManager';
 import { AuditLogsViewer } from '@/components/admin/AuditLogsViewer';
-import { LogOut } from 'lucide-react';
+import { StatsCards } from '@/components/admin/StatsCards';
+import { UsersManager } from '@/components/admin/UsersManager';
+import { UsersConfigViewer } from '@/components/admin/UsersConfigViewer';
+import { LogOut, Home, Settings, Phone, FileText, UserCircle, Settings2 } from 'lucide-react';
 import { logout } from '@/lib/storage';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -26,25 +29,38 @@ export default function Admin() {
 
   const handleLogout = () => {
     logout();
-    navigate('/admin/login');
+    navigate('/');
   };
 
   if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border bg-card sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Painel Administrativo</h1>
-              <p className="text-sm text-muted-foreground">
-                Bem-vindo, {user.full_name}
-              </p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Settings className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">
+                  Painel Administrativo
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Bem-vindo, <span className="font-semibold">{user.full_name}</span>
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/">
+                  <Home className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Link>
+              </Button>
               <ThemeToggle />
-              <Button variant="outline" onClick={handleLogout}>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair
               </Button>
@@ -53,24 +69,65 @@ export default function Admin() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="extensions" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="extensions">Ramais</TabsTrigger>
-            <TabsTrigger value="queues">Filas</TabsTrigger>
-            <TabsTrigger value="logs">Logs de Auditoria</TabsTrigger>
+      <main className="container mx-auto px-4 py-6">
+        <div className="mb-6">
+          <StatsCards />
+        </div>
+
+        <Tabs defaultValue="extensions" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
+            <TabsTrigger value="extensions" className="flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              Ramais
+            </TabsTrigger>
+            <TabsTrigger value="configs" className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4" />
+              Configurações
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <UserCircle className="h-4 w-4" />
+              Usuários
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Logs
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="extensions">
-            <ExtensionsManager />
+          <TabsContent value="extensions" className="space-y-4">
+            <Card className="border">
+              <CardHeader>
+                <CardTitle>Gerenciar Ramais</CardTitle>
+                <CardDescription>
+                  Adicione, edite ou remova ramais do sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ExtensionsManager />
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          <TabsContent value="queues">
-            <QueuesManager />
+          <TabsContent value="configs" className="space-y-4">
+            <UsersConfigViewer />
           </TabsContent>
 
-          <TabsContent value="logs">
-            <AuditLogsViewer />
+          <TabsContent value="users" className="space-y-4">
+            <UsersManager />
+          </TabsContent>
+
+          <TabsContent value="logs" className="space-y-4">
+            <Card className="border">
+              <CardHeader>
+                <CardTitle>Logs de Auditoria</CardTitle>
+                <CardDescription>
+                  Visualize todas as ações realizadas no sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AuditLogsViewer />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
