@@ -34,25 +34,38 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Ramal } from '@/lib/types';
-import { getRamais, deleteRamal, updateRamal } from '@/lib/supabase';
+import { Ramal, Departamento } from '@/lib/types';
+import { getRamais, deleteRamal, updateRamal, createRamal, getDepartamentos } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Phone, Eye, Copy, User, Server, Network, Lock, Edit, Trash2, Settings } from 'lucide-react';
+import { Phone, Eye, Copy, User, Server, Network, Lock, Edit, Trash2, Settings, Plus } from 'lucide-react';
 
 export const RamaisManager = () => {
   const [ramais, setRamais] = useState<Ramal[]>([]);
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [filteredRamais, setFilteredRamais] = useState<Ramal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRamal, setSelectedRamal] = useState<Ramal | null>(null);
   const [configSheetOpen, setConfigSheetOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editForm, setEditForm] = useState<Ramal | null>(null);
+  const [createForm, setCreateForm] = useState({
+    nome: '',
+    ramal: '',
+    departamento: '',
+    servidor_sip: '',
+    usuario: '',
+    dominio: '',
+    login: '',
+    senha: '',
+    status: 'ativo' as 'ativo' | 'inativo',
+  });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadRamais();
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -69,15 +82,19 @@ export const RamaisManager = () => {
     }
   }, [searchTerm, ramais]);
 
-  const loadRamais = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await getRamais();
-      setRamais(data);
-      setFilteredRamais(data);
+      const [ramaisData, deptData] = await Promise.all([
+        getRamais(),
+        getDepartamentos()
+      ]);
+      setRamais(ramaisData);
+      setFilteredRamais(ramaisData);
+      setDepartamentos(deptData);
     } catch (error) {
-      console.error('Error loading ramais:', error);
-      toast.error('Erro ao carregar ramais');
+      console.error('Error loading data:', error);
+      toast.error('Erro ao carregar dados');
     } finally {
       setLoading(false);
     }
@@ -92,6 +109,41 @@ export const RamaisManager = () => {
     setSelectedRamal(ramal);
     setShowPassword(false);
     setConfigSheetOpen(true);
+  };
+
+  const handleOpenCreateDialog = () => {
+    setCreateForm({
+      nome: '',
+      ramal: '',
+      departamento: departamentos.length > 0 ? departamentos[0].nome : '',
+      servidor_sip: '',
+      usuario: '',
+      dominio: '',
+      login: '',
+      senha: '',
+      status: 'ativo',
+    });
+    setCreateDialogOpen(true);
+  };
+
+  const handleCreate = async () => {
+    if (!createForm.nome.trim() || !createForm.ramal.trim()) {
+      toast.error('Nome e ramal são obrigatórios');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await createRamal(createForm);
+      toast.success('Ramal criado com sucesso!');
+      setCreateDialogOpen(false);
+      loadData();
+    } catch (error) {
+      console.error('Error creating ramal:', error);
+      toast.error('Erro ao criar ramal');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleEdit = (ramal: Ramal) => {
@@ -118,7 +170,7 @@ export const RamaisManager = () => {
       
       toast.success('Ramal atualizado com sucesso!');
       setEditDialogOpen(false);
-      loadRamais();
+      loadData();
     } catch (error) {
       console.error('Error updating ramal:', error);
       toast.error('Erro ao atualizar ramal');
@@ -135,7 +187,7 @@ export const RamaisManager = () => {
     try {
       await deleteRamal(id);
       toast.success('Ramal excluído com sucesso!');
-      loadRamais();
+      loadData();
     } catch (error) {
       console.error('Error deleting ramal:', error);
       toast.error('Erro ao excluir ramal');
@@ -147,6 +199,11 @@ export const RamaisManager = () => {
       return <Badge className="bg-green-500 text-white">Ativo</Badge>;
     }
     return <Badge variant="secondary">Inativo</Badge>;
+  };
+
+  const getDepartmentColor = (deptName: string) => {
+    const dept = departamentos.find(d => d.nome === deptName);
+    return dept?.cor || '#6b7280';
   };
 
   if (loading) {
@@ -180,8 +237,8 @@ export const RamaisManager = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-md"
             />
-            <Button>
-              <span className="mr-2">+</span>
+            <Button onClick={handleOpenCreateDialog}>
+              <Plus className="mr-2 h-4 w-4" />
               Novo Ramal
             </Button>
           </div>
@@ -209,7 +266,15 @@ export const RamaisManager = () => {
                     <TableRow key={ramal.id}>
                       <TableCell className="font-medium">{ramal.ramal}</TableCell>
                       <TableCell>{ramal.nome}</TableCell>
-                      <TableCell>{ramal.departamento}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: getDepartmentColor(ramal.departamento) }}
+                          ></div>
+                          {ramal.departamento}
+                        </div>
+                      </TableCell>
                       <TableCell>{getStatusBadge(ramal.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -249,9 +314,144 @@ export const RamaisManager = () => {
         </CardContent>
       </Card>
 
+      {/* Dialog para CRIAR ramal */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Criar Novo Ramal</DialogTitle>
+            <DialogDescription>
+              Preencha as informações do novo ramal
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-nome">Nome *</Label>
+                <Input
+                  id="create-nome"
+                  value={createForm.nome}
+                  onChange={(e) => setCreateForm({ ...createForm, nome: e.target.value })}
+                  placeholder="Ex: João Silva"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-ramal">Ramal *</Label>
+                <Input
+                  id="create-ramal"
+                  value={createForm.ramal}
+                  onChange={(e) => setCreateForm({ ...createForm, ramal: e.target.value })}
+                  placeholder="Ex: 3281002"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-departamento">Departamento *</Label>
+                <Select
+                  value={createForm.departamento}
+                  onValueChange={(value) => setCreateForm({ ...createForm, departamento: value })}
+                >
+                  <SelectTrigger id="create-departamento">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departamentos.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.nome}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: dept.cor }}
+                          ></div>
+                          {dept.icone} {dept.nome}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-status">Status</Label>
+                <Select
+                  value={createForm.status}
+                  onValueChange={(value: 'ativo' | 'inativo') => setCreateForm({ ...createForm, status: value })}
+                >
+                  <SelectTrigger id="create-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ativo">Ativo</SelectItem>
+                    <SelectItem value="inativo">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="create-servidor">Servidor SIP</Label>
+              <Input
+                id="create-servidor"
+                value={createForm.servidor_sip}
+                onChange={(e) => setCreateForm({ ...createForm, servidor_sip: e.target.value })}
+                placeholder="Ex: sip.exemplo.com"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-usuario">Usuário</Label>
+                <Input
+                  id="create-usuario"
+                  value={createForm.usuario}
+                  onChange={(e) => setCreateForm({ ...createForm, usuario: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-dominio">Domínio</Label>
+                <Input
+                  id="create-dominio"
+                  value={createForm.dominio}
+                  onChange={(e) => setCreateForm({ ...createForm, dominio: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-login">Login</Label>
+                <Input
+                  id="create-login"
+                  value={createForm.login}
+                  onChange={(e) => setCreateForm({ ...createForm, login: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-senha">Senha</Label>
+                <Input
+                  id="create-senha"
+                  type="password"
+                  value={createForm.senha}
+                  onChange={(e) => setCreateForm({ ...createForm, senha: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreate} disabled={saving}>
+              {saving ? 'Criando...' : 'Criar Ramal'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog para EDITAR ramal */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Ramal</DialogTitle>
             <DialogDescription>
@@ -283,11 +483,27 @@ export const RamaisManager = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-departamento">Departamento</Label>
-                  <Input
-                    id="edit-departamento"
+                  <Select
                     value={editForm.departamento}
-                    onChange={(e) => setEditForm({ ...editForm, departamento: e.target.value })}
-                  />
+                    onValueChange={(value) => setEditForm({ ...editForm, departamento: value })}
+                  >
+                    <SelectTrigger id="edit-departamento">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departamentos.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.nome}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: dept.cor }}
+                            ></div>
+                            {dept.icone} {dept.nome}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-status">Status</Label>

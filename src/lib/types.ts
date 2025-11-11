@@ -2,6 +2,41 @@ export type ExtensionStatus = 'active' | 'inactive' | 'maintenance';
 export type UserRole = 'super_admin' | 'admin' | 'moderator';
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE';
 
+// ========================================
+// Interface para Departamentos
+// ========================================
+export interface Departamento {
+  id: string;
+  nome: string;
+  cor: string;
+  icone?: string;
+  ordem: number;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ========================================
+// Interface para Ramais
+// ========================================
+export interface Ramal {
+  id: string;
+  nome: string;
+  ramal: string;
+  departamento: string;
+  servidor_sip: string;
+  usuario: string;
+  dominio: string;
+  login: string;
+  senha: string;
+  status: 'ativo' | 'inativo';
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ========================================
+// Interfaces Existentes
+// ========================================
 export interface Queue {
   id: string;
   name: string;

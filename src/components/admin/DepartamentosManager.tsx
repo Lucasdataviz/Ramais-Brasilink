@@ -7,7 +7,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIU
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ========================================
-// FUNÇÕES PARA DEPARTAMENTOS
+// FUNÇÕES PARA DEPARTAMENTOS (NOVO!)
 // ========================================
 
 export const getDepartamentos = async (): Promise<Departamento[]> => {
