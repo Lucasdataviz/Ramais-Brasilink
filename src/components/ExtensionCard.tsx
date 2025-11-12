@@ -7,12 +7,21 @@ import { toast } from 'sonner';
 
 interface ExtensionCardProps {
   extension: Extension;
+  showShortNumber?: boolean;
 }
 
-export const ExtensionCard = ({ extension }: ExtensionCardProps) => {
+export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionCardProps) => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Ramal copiado!');
+  };
+
+  // Função para mostrar apenas os últimos 4 dígitos
+  const formatNumber = (number: string) => {
+    if (showShortNumber && number.length > 4) {
+      return number.slice(-4);
+    }
+    return number;
   };
 
   const getStatusColor = (status: string) => {
@@ -59,7 +68,7 @@ export const ExtensionCard = ({ extension }: ExtensionCardProps) => {
       <div className="flex items-center gap-2 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border border-blue-200/50 dark:border-blue-800/50">
         <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
         <span className="text-lg font-mono font-bold text-foreground flex-1">
-          {extension.number}
+          {formatNumber(extension.number)}
         </span>
         <Button
           variant="ghost"

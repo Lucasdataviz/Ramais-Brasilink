@@ -12,6 +12,7 @@ export interface Departamento {
   icone?: string;
   ordem: number;
   ativo: boolean;
+  departamento_pai?: string | null; // ID do departamento pai (para hierarquia)
   created_at: string;
   updated_at: string;
 }
@@ -80,6 +81,21 @@ export interface AdminUser {
   sip_config?: UserSipConfig;
   created_at: string;
   updated_at: string;
+}
+
+// Interface para a tabela usuario_telefonia
+export interface UsuarioTelefonia {
+  id: string;
+  nome: string;
+  email: string;
+  senha: string; // Hash bcrypt
+  role?: UserRole;
+  departamento?: string; // ID do departamento
+  ativo?: boolean;
+  ultimo_login?: string | null; // Campo real na tabela
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any; // Para campos adicionais que possam existir
 }
 
 export interface AuditLog {

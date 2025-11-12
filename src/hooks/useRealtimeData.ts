@@ -21,14 +21,20 @@ export const useRealtimeExtensions = () => {
       setLoading(true);
       const ramais = await getRamais();
       
-      // Converter formato Ramal para Extension
-      const extensionsData: Extension[] = ramais.map((ramal) => ({
-        id: ramal.id,
-        name: ramal.nome,
-        number: ramal.ramal,
-        department: ramal.departamento,
-        status: ramal.status === 'ativo' ? 'active' : 'inactive',
-      }));
+      // Converter formato Ramal para Extension (apenas ativos)
+      const extensionsData: Extension[] = ramais
+        .filter(ramal => ramal.status === 'ativo')
+        .map((ramal) => ({
+          id: ramal.id,
+          name: ramal.nome,
+          number: ramal.ramal,
+          department: ramal.departamento,
+          status: 'active' as const,
+          queue_id: null,
+          metadata: {},
+          created_at: ramal.created_at || new Date().toISOString(),
+          updated_at: ramal.updated_at || new Date().toISOString(),
+        }));
       
       setExtensions(extensionsData);
     } catch (error) {
