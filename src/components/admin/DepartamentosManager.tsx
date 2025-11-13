@@ -27,19 +27,44 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Departamento } from '@/lib/types';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Departamento, Ramal } from '@/lib/types';
 import {
   getAllDepartamentos,
   createDepartamento,
   updateDepartamento,
   deleteDepartamento,
   toggleDepartamentoStatus,
+  getRamais,
+  updateRamal,
+  getRamalsByDepartamento,
 } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Building2, Plus, Edit, Trash2, Power, PowerOff } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, Power, PowerOff, Phone } from 'lucide-react';
+
+// Ícones predefinidos
+const PREDEFINED_ICONS = [
+  '🏢', '💼', '📞', '🛠️', '💻', '📊', '💰', '📦', '🚚', '🎯', 
+  '⭐', '🔥', '🌟', '💎', '🎨', '🎭', '🎪', '🎬', '🎮', '🎸',
+  '🎺', '🎻', '🎤', '🎧', '🎵', '🎶', '🎼', '🎹', '🥁', '🎲',
+  '🏆', '🎖️', '🏅', '🎗️', '🎟️', '🎫', '🎪', '🎭', '🎨', '🖼️',
+  '📷', '📹', '🎥', '📺', '📻', '📱', '💻', '⌚', '🖥️', '⌨️',
+  '🖱️', '🖨️', '📠', '📞', '☎️', '📟', '📠', '📺', '📻', '🔊',
+  '🔉', '🔈', '📢', '📣', '📯', '🔔', '🔕', '📻', '📡', '💬',
+  '💭', '🗨️', '🗯️', '💤', '💢', '💥', '💫', '💦', '💨', '🔥',
+  '⭐', '🌟', '✨', '💫', '⚡', '☄️', '💥', '💢', '💤', '💭'
+];
+
+// Cores predefinidas
+const PREDEFINED_COLORS = [
+  '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#6366f1', '#ef4444',
+  '#14b8a6', '#f97316', '#84cc16', '#a855f7', '#e11d48', '#0ea5e9', '#64748b', '#1e293b',
+];
 
 export const DepartamentosManager = () => {
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [ramais, setRamais] = useState<Ramal[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -47,25 +72,38 @@ export const DepartamentosManager = () => {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
-    cor: '#6b7280',
     icone: '🏢',
-    ordem: 0,
-    ativo: true,
-    departamento_pai: '',
+    cor: '#3b82f6',
+    supervisor: '',
+    coordenador: '',
+    status: 'ativo' as 'ativo' | 'inativo',
+    ramaisSelecionados: [] as string[], // IDs dos ramais selecionados
   });
 
   useEffect(() => {
-    loadDepartamentos();
+    loadData();
   }, []);
 
-  const loadDepartamentos = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await getAllDepartamentos();
-      setDepartamentos(data);
+      const [deptData, ramaisData] = await Promise.all([
+        getAllDepartamentos(),
+        getRamais(),
+      ]);
+      setDepartamentos(deptData);
+      setRamais(ramaisData);
     } catch (error) {
-      console.error('Error loading departamentos:', error);
-      toast.error('Erro ao carregar departamentos');
+      console.error('Error loading data:', error);
+      // Fallback: usar getDepartamentosFromRamais se getAllDepartamentos falhar
+      try {
+        const { getDepartamentosFromRamais } = await import('@/lib/supabase');
+        const data = await getDepartamentosFromRamais();
+        setDepartamentos(data);
+      } catch (fallbackError) {
+        console.error('Error loading departamentos:', fallbackError);
+        toast.error('Erro ao carregar departamentos');
+      }
     } finally {
       setLoading(false);
     }
@@ -74,25 +112,45 @@ export const DepartamentosManager = () => {
   const handleOpenCreateDialog = () => {
     setFormData({
       nome: '',
-      cor: '#6b7280',
       icone: '🏢',
-      ordem: departamentos.length,
-      ativo: true,
-      departamento_pai: '',
+      cor: '#3b82f6',
+      supervisor: '',
+      coordenador: '',
+      status: 'ativo',
+      ramaisSelecionados: [],
     });
     setCreateDialogOpen(true);
   };
 
-  const handleOpenEditDialog = (departamento: Departamento) => {
+  const handleOpenEditDialog = async (departamento: Departamento) => {
     setSelectedDepartamento(departamento);
-    setFormData({
-      nome: departamento.nome,
-      cor: departamento.cor,
-      icone: departamento.icone || '🏢',
-      ordem: departamento.ordem,
-      ativo: departamento.ativo,
-      departamento_pai: departamento.departamento_pai || '',
-    });
+    
+    // Buscar ramais vinculados a este departamento
+    try {
+      const ramaisDoDepartamento = await getRamalsByDepartamento(departamento.nome);
+      const ramaisIds = ramaisDoDepartamento.map(r => r.id);
+      
+      setFormData({
+        nome: departamento.nome,
+        icone: departamento.icone || '🏢',
+        cor: departamento.cor || '#3b82f6',
+        supervisor: departamento.supervisor || '',
+        coordenador: departamento.coordenador || '',
+        status: departamento.ativo ? 'ativo' : 'inativo',
+        ramaisSelecionados: ramaisIds,
+      });
+    } catch (error) {
+      console.error('Error loading ramais:', error);
+      setFormData({
+        nome: departamento.nome,
+        icone: departamento.icone || '🏢',
+        cor: departamento.cor || '#3b82f6',
+        supervisor: departamento.supervisor || '',
+        coordenador: departamento.coordenador || '',
+        status: departamento.ativo ? 'ativo' : 'inativo',
+        ramaisSelecionados: [],
+      });
+    }
     setEditDialogOpen(true);
   };
 
@@ -104,17 +162,52 @@ export const DepartamentosManager = () => {
 
     try {
       setSaving(true);
-      await createDepartamento({
-        nome: formData.nome,
-        cor: formData.cor,
-        icone: formData.icone,
-        ordem: formData.ordem,
-        ativo: formData.ativo,
-        departamento_pai: formData.departamento_pai === 'none' ? null : (formData.departamento_pai || null),
-      });
-      toast.success('Departamento criado com sucesso!');
-      setCreateDialogOpen(false);
-      loadDepartamentos();
+      
+      // Tentar criar na tabela departamentos
+      try {
+        const novoDepartamento = await createDepartamento({
+          nome: formData.nome,
+          cor: formData.cor,
+          icone: formData.icone,
+          ordem: departamentos.length,
+          ativo: formData.status === 'ativo',
+          departamento_pai: null,
+          supervisor: formData.supervisor || null,
+          coordenador: formData.coordenador || null,
+        });
+        
+        // Vincular ramais selecionados ao departamento
+        if (formData.ramaisSelecionados.length > 0) {
+          for (const ramalId of formData.ramaisSelecionados) {
+            await updateRamal(ramalId, { departamento: formData.nome });
+          }
+        }
+        
+        toast.success('Departamento criado com sucesso!');
+        setCreateDialogOpen(false);
+        loadData();
+      } catch (error: any) {
+        // Se a tabela departamentos não existir, criar um ramal placeholder
+        if (error.message?.includes('relation "departamentos" does not exist')) {
+          const { createRamalWithDepartamento } = await import('@/lib/supabase');
+          await createRamalWithDepartamento({
+            nome: `Departamento ${formData.nome}`,
+            ramal: `DEP-${formData.nome.toUpperCase().substring(0, 3)}`,
+            departamento: formData.nome,
+            servidor_sip: '',
+            usuario: '',
+            dominio: '',
+            login: '',
+            senha: '',
+            status: formData.status,
+          });
+          toast.success('Departamento criado com sucesso!');
+          setCreateDialogOpen(false);
+          loadData();
+        } else {
+          throw error;
+        }
+      }
     } catch (error: any) {
       console.error('Error creating departamento:', error);
       toast.error(error.message || 'Erro ao criar departamento');
@@ -131,17 +224,49 @@ export const DepartamentosManager = () => {
 
     try {
       setSaving(true);
-      await updateDepartamento(selectedDepartamento.id, {
-        nome: formData.nome,
-        cor: formData.cor,
-        icone: formData.icone,
-        ordem: formData.ordem,
-        ativo: formData.ativo,
-        departamento_pai: formData.departamento_pai === 'none' ? null : (formData.departamento_pai || null),
-      });
-      toast.success('Departamento atualizado com sucesso!');
-      setEditDialogOpen(false);
-      loadDepartamentos();
+      
+      // Tentar atualizar na tabela departamentos
+      try {
+        await updateDepartamento(selectedDepartamento.id, {
+          nome: formData.nome,
+          cor: formData.cor,
+          icone: formData.icone,
+          ativo: formData.status === 'ativo',
+          supervisor: formData.supervisor || null,
+          coordenador: formData.coordenador || null,
+        });
+        
+        // Atualizar ramais vinculados
+        // Primeiro, remover vínculo de todos os ramais do departamento antigo
+        const ramaisAntigos = await getRamalsByDepartamento(selectedDepartamento.nome);
+        for (const ramal of ramaisAntigos) {
+          if (!formData.ramaisSelecionados.includes(ramal.id)) {
+            await updateRamal(ramal.id, { departamento: '' });
+          }
+        }
+        
+        // Depois, adicionar vínculo dos ramais selecionados
+        for (const ramalId of formData.ramaisSelecionados) {
+          await updateRamal(ramalId, { departamento: formData.nome });
+        }
+        
+        toast.success('Departamento atualizado com sucesso!');
+        setEditDialogOpen(false);
+        loadData();
+      } catch (error: any) {
+        // Se a tabela departamentos não existir, atualizar apenas os ramais
+        if (error.message?.includes('relation "departamentos" does not exist')) {
+          const { updateRamaisByDepartamento } = await import('@/lib/supabase');
+          if (selectedDepartamento.nome !== formData.nome) {
+            await updateRamaisByDepartamento(selectedDepartamento.nome, formData.nome);
+          }
+          toast.success('Departamento atualizado com sucesso!');
+          setEditDialogOpen(false);
+          loadData();
+        } else {
+          throw error;
+        }
+      }
     } catch (error: any) {
       console.error('Error updating departamento:', error);
       toast.error(error.message || 'Erro ao atualizar departamento');
@@ -158,10 +283,18 @@ export const DepartamentosManager = () => {
     try {
       await deleteDepartamento(id);
       toast.success('Departamento excluído com sucesso!');
-      loadDepartamentos();
+      loadData();
     } catch (error: any) {
       console.error('Error deleting departamento:', error);
-      toast.error(error.message || 'Erro ao excluir departamento');
+      // Se a tabela departamentos não existir, deletar ramais
+      if (error.message?.includes('relation "departamentos" does not exist')) {
+        const { deleteRamaisByDepartamento } = await import('@/lib/supabase');
+        await deleteRamaisByDepartamento(nome);
+        toast.success('Departamento excluído com sucesso!');
+        loadData();
+      } else {
+        toast.error(error.message || 'Erro ao excluir departamento');
+      }
     }
   };
 
@@ -169,45 +302,32 @@ export const DepartamentosManager = () => {
     try {
       await toggleDepartamentoStatus(departamento.id, departamento.ativo);
       toast.success(`Departamento ${departamento.ativo ? 'desativado' : 'ativado'} com sucesso!`);
-      loadDepartamentos();
+      loadData();
     } catch (error: any) {
       console.error('Error toggling status:', error);
-      toast.error('Erro ao alterar status do departamento');
+      // Fallback: atualizar ramais manualmente
+      const ramaisDoDepartamento = ramais.filter(r => r.departamento === departamento.nome);
+      const novoStatus = departamento.ativo ? 'inativo' : 'ativo';
+      for (const ramal of ramaisDoDepartamento) {
+        await updateRamal(ramal.id, { status: novoStatus });
+      }
+      toast.success(`Departamento ${departamento.ativo ? 'desativado' : 'ativado'} com sucesso!`);
+      loadData();
     }
   };
 
-  const iconesPredefinidos = [
-    { nome: 'Edifício', valor: '🏢' },
-    { nome: 'Telefone', valor: '📞' },
-    { nome: 'Suporte', valor: '💼' },
-    { nome: 'Vendas', valor: '💰' },
-    { nome: 'TI', valor: '💻' },
-    { nome: 'Recursos Humanos', valor: '👥' },
-    { nome: 'Marketing', valor: '📢' },
-    { nome: 'Financeiro', valor: '💵' },
-    { nome: 'Atendimento', valor: '🎧' },
-    { nome: 'Produção', valor: '🏭' },
-    { nome: 'Logística', valor: '🚚' },
-    { nome: 'Segurança', valor: '🔒' },
-    { nome: 'Qualidade', valor: '⭐' },
-    { nome: 'Pesquisa', valor: '🔬' },
-    { nome: 'Jurídico', valor: '⚖️' },
-  ];
+  const toggleRamalSelection = (ramalId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      ramaisSelecionados: prev.ramaisSelecionados.includes(ramalId)
+        ? prev.ramaisSelecionados.filter(id => id !== ramalId)
+        : [...prev.ramaisSelecionados, ramalId],
+    }));
+  };
 
-  const coresPredefinidas = [
-    { nome: 'Cinza', valor: '#6b7280' },
-    { nome: 'Azul', valor: '#3b82f6' },
-    { nome: 'Verde', valor: '#10b981' },
-    { nome: 'Amarelo', valor: '#f59e0b' },
-    { nome: 'Vermelho', valor: '#ef4444' },
-    { nome: 'Roxo', valor: '#8b5cf6' },
-    { nome: 'Rosa', valor: '#ec4899' },
-    { nome: 'Laranja', valor: '#f97316' },
-    { nome: 'Ciano', valor: '#06b6d4' },
-    { nome: 'Verde Limão', valor: '#84cc16' },
-    { nome: 'Azul Marinho', valor: '#1e40af' },
-    { nome: 'Vermelho Escuro', valor: '#dc2626' },
-  ];
+  const getRamaisDoDepartamento = (departamento: Departamento) => {
+    return ramais.filter(r => r.departamento === departamento.nome || r.departamento === departamento.id);
+  };
 
   if (loading) {
     return (
@@ -245,10 +365,11 @@ export const DepartamentosManager = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
                   <TableHead>Ícone</TableHead>
-                  <TableHead>Cor</TableHead>
-                  <TableHead>Ordem</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Ramais</TableHead>
+                  <TableHead>Supervisor</TableHead>
+                  <TableHead>Coordenador</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -256,69 +377,102 @@ export const DepartamentosManager = () => {
               <TableBody>
                 {departamentos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       Nenhum departamento cadastrado
                     </TableCell>
                   </TableRow>
                 ) : (
-                  departamentos.map((departamento) => (
-                    <TableRow key={departamento.id}>
-                      <TableCell className="font-medium">{departamento.nome}</TableCell>
-                      <TableCell>
-                        <span className="text-2xl">{departamento.icone || '🏢'}</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-6 h-6 rounded-full border-2 border-gray-300"
-                            style={{ backgroundColor: departamento.cor }}
-                          ></div>
-                          <span className="text-sm text-muted-foreground">{departamento.cor}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{departamento.ordem}</TableCell>
-                      <TableCell>
-                        {departamento.ativo ? (
-                          <Badge className="bg-green-500 text-white">Ativo</Badge>
-                        ) : (
-                          <Badge variant="secondary">Inativo</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleToggleStatus(departamento)}
-                            title={departamento.ativo ? 'Desativar' : 'Ativar'}
-                          >
-                            {departamento.ativo ? (
-                              <PowerOff className="h-4 w-4" />
-                            ) : (
-                              <Power className="h-4 w-4" />
+                  departamentos.map((departamento) => {
+                    const ramaisDoDepartamento = getRamaisDoDepartamento(departamento);
+                    return (
+                      <TableRow key={departamento.id}>
+                        <TableCell>
+                          <span className="text-2xl">{departamento.icone || '🏢'}</span>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: departamento.cor }}
+                            ></div>
+                            {departamento.nome}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {ramaisDoDepartamento.slice(0, 3).map((ramal) => (
+                              <Badge key={ramal.id} variant="outline" className="text-xs">
+                                <Phone className="h-3 w-3 mr-1" />
+                                {ramal.ramal}
+                              </Badge>
+                            ))}
+                            {ramaisDoDepartamento.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{ramaisDoDepartamento.length - 3}
+                              </Badge>
                             )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEditDialog(departamento)}
-                            title="Editar"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(departamento.id, departamento.nome)}
-                            title="Excluir"
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                            {ramaisDoDepartamento.length === 0 && (
+                              <span className="text-xs text-muted-foreground">Nenhum ramal</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {departamento.supervisor ? (
+                            <Badge variant="secondary">{departamento.supervisor}</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {departamento.coordenador ? (
+                            <Badge variant="secondary">{departamento.coordenador}</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {departamento.ativo ? (
+                            <Badge className="bg-green-500 text-white">Ativo</Badge>
+                          ) : (
+                            <Badge variant="secondary">Inativo</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleStatus(departamento)}
+                              title={departamento.ativo ? 'Desativar' : 'Ativar'}
+                            >
+                              {departamento.ativo ? (
+                                <PowerOff className="h-4 w-4" />
+                              ) : (
+                                <Power className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenEditDialog(departamento)}
+                              title="Editar"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(departamento.id, departamento.nome)}
+                              title="Excluir"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -328,7 +482,7 @@ export const DepartamentosManager = () => {
 
       {/* Dialog para CRIAR departamento */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Criar Novo Departamento</DialogTitle>
             <DialogDescription>
@@ -343,104 +497,135 @@ export const DepartamentosManager = () => {
                 id="create-nome"
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                placeholder="Ex: Administrativo"
+                placeholder="Ex: SAC"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="create-icone">Ícone</Label>
-                <Select
-                  value={formData.icone}
-                  onValueChange={(value) => setFormData({ ...formData, icone: value })}
-                >
-                  <SelectTrigger id="create-icone">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {iconesPredefinidos.map((icone) => (
-                      <SelectItem key={icone.valor} value={icone.valor}>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{icone.valor}</span>
-                          <span>{icone.nome}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="create-supervisor">Supervisor</Label>
+                <Input
+                  id="create-supervisor"
+                  value={formData.supervisor}
+                  onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
+                  placeholder="Ex: Maria"
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="create-cor">Cor</Label>
-                <Select
-                  value={formData.cor}
-                  onValueChange={(value) => setFormData({ ...formData, cor: value })}
-                >
-                  <SelectTrigger id="create-cor">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {coresPredefinidas.map((cor) => (
-                      <SelectItem key={cor.valor} value={cor.valor}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-4 h-4 rounded-full border-2 border-gray-300"
-                            style={{ backgroundColor: cor.valor }}
-                          ></div>
-                          {cor.nome}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="create-coordenador">Coordenador</Label>
+                <Input
+                  id="create-coordenador"
+                  value={formData.coordenador}
+                  onChange={(e) => setFormData({ ...formData, coordenador: e.target.value })}
+                  placeholder="Ex: Floriano"
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="create-ordem">Ordem</Label>
-                <Input
-                  id="create-ordem"
-                  type="number"
-                  value={formData.ordem}
-                  onChange={(e) => setFormData({ ...formData, ordem: parseInt(e.target.value) || 0 })}
-                  placeholder="0"
-                />
+                <Label htmlFor="create-icone">Ícone</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.icone}
+                    onValueChange={(value) => setFormData({ ...formData, icone: value })}
+                  >
+                    <SelectTrigger id="create-icone">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <ScrollArea className="h-60">
+                        {PREDEFINED_ICONS.map((icon) => (
+                          <SelectItem key={icon} value={icon}>
+                            <span className="text-xl">{icon}</span>
+                          </SelectItem>
+                        ))}
+                      </ScrollArea>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="text"
+                    value={formData.icone}
+                    onChange={(e) => setFormData({ ...formData, icone: e.target.value })}
+                    placeholder="Ou digite um emoji"
+                    className="w-24"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="create-status">Status</Label>
-                <Select
-                  value={formData.ativo ? 'ativo' : 'inativo'}
-                  onValueChange={(value) => setFormData({ ...formData, ativo: value === 'ativo' })}
-                >
-                  <SelectTrigger id="create-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ativo">Ativo</SelectItem>
-                    <SelectItem value="inativo">Inativo</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="create-cor">Cor</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.cor}
+                    onValueChange={(value) => setFormData({ ...formData, cor: value })}
+                  >
+                    <SelectTrigger id="create-cor">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PREDEFINED_COLORS.map((color) => (
+                        <SelectItem key={color} value={color}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-4 h-4 rounded-full"
+                              style={{ backgroundColor: color }}
+                            ></div>
+                            <span>{color}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="color"
+                    value={formData.cor}
+                    onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
+                    className="w-20 h-10"
+                  />
+                </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="create-departamento-pai">Departamento Pai (opcional)</Label>
+              <Label htmlFor="create-status">Status</Label>
               <Select
-                value={formData.departamento_pai}
-                onValueChange={(value) => setFormData({ ...formData, departamento_pai: value })}
+                value={formData.status}
+                onValueChange={(value: 'ativo' | 'inativo') => setFormData({ ...formData, status: value })}
               >
-                <SelectTrigger id="create-departamento-pai">
-                  <SelectValue placeholder="Nenhum (departamento principal)" />
+                <SelectTrigger id="create-status">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Nenhum (departamento principal)</SelectItem>
-                  {departamentos.filter(d => !d.departamento_pai).map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.icone} {dept.nome}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2 border-t pt-4">
+              <Label>Vincular Ramais Existentes</Label>
+              <ScrollArea className="h-40 border rounded-md p-4">
+                <div className="space-y-2">
+                  {ramais.map((ramal) => (
+                    <div key={ramal.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`ramal-${ramal.id}`}
+                        checked={formData.ramaisSelecionados.includes(ramal.id)}
+                        onCheckedChange={() => toggleRamalSelection(ramal.id)}
+                      />
+                      <Label
+                        htmlFor={`ramal-${ramal.id}`}
+                        className="text-sm font-normal cursor-pointer flex-1"
+                      >
+                        {ramal.nome} - {ramal.ramal}
+                      </Label>
+                    </div>
+                  ))}
+                  {ramais.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Nenhum ramal disponível</p>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           </div>
 
@@ -457,7 +642,7 @@ export const DepartamentosManager = () => {
 
       {/* Dialog para EDITAR departamento */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Departamento</DialogTitle>
             <DialogDescription>
@@ -477,97 +662,129 @@ export const DepartamentosManager = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-icone">Ícone</Label>
-                <Select
-                  value={formData.icone}
-                  onValueChange={(value) => setFormData({ ...formData, icone: value })}
-                >
-                  <SelectTrigger id="edit-icone">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {iconesPredefinidos.map((icone) => (
-                      <SelectItem key={icone.valor} value={icone.valor}>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{icone.valor}</span>
-                          <span>{icone.nome}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="edit-supervisor">Supervisor</Label>
+                <Input
+                  id="edit-supervisor"
+                  value={formData.supervisor}
+                  onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
+                  placeholder="Ex: Maria"
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-cor">Cor</Label>
-                <Select
-                  value={formData.cor}
-                  onValueChange={(value) => setFormData({ ...formData, cor: value })}
-                >
-                  <SelectTrigger id="edit-cor">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {coresPredefinidas.map((cor) => (
-                      <SelectItem key={cor.valor} value={cor.valor}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-4 h-4 rounded-full border-2 border-gray-300"
-                            style={{ backgroundColor: cor.valor }}
-                          ></div>
-                          {cor.nome}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="edit-coordenador">Coordenador</Label>
+                <Input
+                  id="edit-coordenador"
+                  value={formData.coordenador}
+                  onChange={(e) => setFormData({ ...formData, coordenador: e.target.value })}
+                  placeholder="Ex: Floriano"
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-ordem">Ordem</Label>
-                <Input
-                  id="edit-ordem"
-                  type="number"
-                  value={formData.ordem}
-                  onChange={(e) => setFormData({ ...formData, ordem: parseInt(e.target.value) || 0 })}
-                />
+                <Label htmlFor="edit-icone">Ícone</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.icone}
+                    onValueChange={(value) => setFormData({ ...formData, icone: value })}
+                  >
+                    <SelectTrigger id="edit-icone">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <ScrollArea className="h-60">
+                        {PREDEFINED_ICONS.map((icon) => (
+                          <SelectItem key={icon} value={icon}>
+                            <span className="text-xl">{icon}</span>
+                          </SelectItem>
+                        ))}
+                      </ScrollArea>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="text"
+                    value={formData.icone}
+                    onChange={(e) => setFormData({ ...formData, icone: e.target.value })}
+                    placeholder="Ou digite um emoji"
+                    className="w-24"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-status">Status</Label>
-                <Select
-                  value={formData.ativo ? 'ativo' : 'inativo'}
-                  onValueChange={(value) => setFormData({ ...formData, ativo: value === 'ativo' })}
-                >
-                  <SelectTrigger id="edit-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ativo">Ativo</SelectItem>
-                    <SelectItem value="inativo">Inativo</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="edit-cor">Cor</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.cor}
+                    onValueChange={(value) => setFormData({ ...formData, cor: value })}
+                  >
+                    <SelectTrigger id="edit-cor">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PREDEFINED_COLORS.map((color) => (
+                        <SelectItem key={color} value={color}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-4 h-4 rounded-full"
+                              style={{ backgroundColor: color }}
+                            ></div>
+                            <span>{color}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="color"
+                    value={formData.cor}
+                    onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
+                    className="w-20 h-10"
+                  />
+                </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-departamento-pai">Departamento Pai (opcional)</Label>
+              <Label htmlFor="edit-status">Status</Label>
               <Select
-                value={formData.departamento_pai}
-                onValueChange={(value) => setFormData({ ...formData, departamento_pai: value })}
+                value={formData.status}
+                onValueChange={(value: 'ativo' | 'inativo') => setFormData({ ...formData, status: value })}
               >
-                <SelectTrigger id="edit-departamento-pai">
-                  <SelectValue placeholder="Nenhum (departamento principal)" />
+                <SelectTrigger id="edit-status">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Nenhum (departamento principal)</SelectItem>
-                  {departamentos.filter(d => !d.departamento_pai && d.id !== selectedDepartamento?.id).map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.icone} {dept.nome}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2 border-t pt-4">
+              <Label>Vincular Ramais Existentes</Label>
+              <ScrollArea className="h-40 border rounded-md p-4">
+                <div className="space-y-2">
+                  {ramais.map((ramal) => (
+                    <div key={ramal.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`edit-ramal-${ramal.id}`}
+                        checked={formData.ramaisSelecionados.includes(ramal.id)}
+                        onCheckedChange={() => toggleRamalSelection(ramal.id)}
+                      />
+                      <Label
+                        htmlFor={`edit-ramal-${ramal.id}`}
+                        className="text-sm font-normal cursor-pointer flex-1"
+                      >
+                        {ramal.nome} - {ramal.ramal}
+                      </Label>
+                    </div>
+                  ))}
+                  {ramais.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Nenhum ramal disponível</p>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           </div>
 

@@ -26,7 +26,7 @@ import {
   getUsuariosTelefonia, 
   createUsuarioTelefonia, 
   updateUsuarioTelefonia,
-  getAllDepartamentos,
+  getDepartamentosFromRamais,
   toggleUsuarioTelefoniaStatus
 } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -68,7 +68,7 @@ export const UsersManager = () => {
       setLoading(true);
       const [usuariosTelefonia, departamentosData] = await Promise.all([
         getUsuariosTelefonia(),
-        getAllDepartamentos()
+        getDepartamentosFromRamais()
       ]);
       
       // Filtrar apenas departamentos ativos
@@ -102,8 +102,8 @@ export const UsersManager = () => {
 
   const getDepartamentoNome = (departamentoId: string | undefined) => {
     if (!departamentoId) return 'Sem departamento';
-    const dept = departamentos.find(d => d.id === departamentoId);
-    return dept?.nome || 'Departamento não encontrado';
+    const dept = departamentos.find(d => d.id === departamentoId || d.nome === departamentoId);
+    return dept?.nome || departamentoId || 'Departamento não encontrado';
   };
 
   const copyToClipboard = (text: string) => {
@@ -217,8 +217,12 @@ export const UsersManager = () => {
         return;
       }
       
-      await toggleUsuarioTelefoniaStatus(user.id, usuarioAtual.ativo !== false);
-      toast.success(`Usuário ${usuarioAtual.ativo === false ? 'ativado' : 'inativado'} com sucesso!`);
+      // Verificar status atual corretamente
+      const statusAtual = usuarioAtual.ativo === true || usuarioAtual.ativo === undefined;
+      const novoStatus = !statusAtual;
+      
+      await updateUsuarioTelefonia(user.id, { ativo: novoStatus });
+      toast.success(`Usuário ${novoStatus ? 'ativado' : 'inativado'} com sucesso!`);
       loadData();
     } catch (error: any) {
       console.error('Error toggling status:', error);
@@ -305,10 +309,14 @@ export const UsersManager = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleToggleStatus(user)}
-                            title={user.metadata?.ativo === false ? 'Ativar' : 'Inativar'}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleToggleStatus(user);
+                            }}
+                            title={(user.metadata as any)?.ativo === false ? 'Ativar' : 'Inativar'}
                           >
-                            {user.metadata?.ativo === false ? (
+                            {(user.metadata as any)?.ativo === false ? (
                               <Power className="h-4 w-4" />
                             ) : (
                               <PowerOff className="h-4 w-4" />
@@ -673,7 +681,7 @@ export const UsersManager = () => {
                   <SelectContent>
                   <SelectItem value="none">Sem departamento</SelectItem>
                   {departamentos.filter(d => d.ativo).map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
+                    <SelectItem key={dept.id} value={dept.nome}>
                       <div className="flex items-center gap-2">
                         <div
                           className="w-3 h-3 rounded-full"
@@ -771,7 +779,7 @@ export const UsersManager = () => {
                   <SelectContent>
                   <SelectItem value="none">Sem departamento</SelectItem>
                   {departamentos.filter(d => d.ativo).map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
+                    <SelectItem key={dept.id} value={dept.nome}>
                       <div className="flex items-center gap-2">
                         <div
                           className="w-3 h-3 rounded-full"

@@ -20,3 +20,10 @@ AND tablename IN ('ramais', 'usuario_telefonia', 'departamentos');
 
 
 
+
+
+
+
+
+
+

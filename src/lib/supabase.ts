@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { AdminUser, Ramal, Departamento, UsuarioTelefonia } from './types';
+import { AdminUser, Ramal, Departamento, UsuarioTelefonia, NumeroTecnico } from './types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zamksbryvuuaxxwszdgc.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphbWtzYnJ5dnV1YXh4d3N6ZGdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4OTA2NTUsImV4cCI6MjA2MDQ2NjY1NX0.KKcW7dlvWHBwT7dnKmeDNwTIjK2chWkgCMvGYhghOkY';
@@ -425,4 +425,86 @@ export const deleteRamal = async (id: string) => {
 export const toggleRamalStatus = async (id: string, currentStatus: 'ativo' | 'inativo') => {
   const newStatus = currentStatus === 'ativo' ? 'inativo' : 'ativo';
   return updateRamal(id, { status: newStatus });
+};
+
+// ========================================
+// FUNÇÕES PARA NÚMEROS DE TÉCNICOS
+// ========================================
+
+export const getNumeroTecnicos = async (tipo?: string): Promise<NumeroTecnico[]> => {
+  let query = supabase
+    .from('numero_tecnicos')
+    .select('id, nome, telefone, descricao, tipo, created_at, updated_at');
+  
+  if (tipo) {
+    query = query.eq('tipo', tipo);
+  }
+  
+  const { data, error } = await query.order('nome', { ascending: true });
+  
+  if (error) {
+    console.error('Error fetching numero_tecnicos:', error);
+    return [];
+  }
+  return data || [];
+};
+
+export const getNumeroTecnicoById = async (id: string): Promise<NumeroTecnico | null> => {
+  const { data, error } = await supabase
+    .from('numero_tecnicos')
+    .select('id, nome, telefone, descricao, tipo, created_at, updated_at')
+    .eq('id', id)
+    .single();
+  
+  if (error) {
+    console.error('Error fetching numero_tecnico:', error);
+    return null;
+  }
+  return data;
+};
+
+export const createNumeroTecnico = async (tecnico: Omit<NumeroTecnico, 'id' | 'created_at' | 'updated_at'>) => {
+  const { data, error } = await supabase
+    .from('numero_tecnicos')
+    .insert([{
+      nome: tecnico.nome,
+      telefone: tecnico.telefone,
+      descricao: tecnico.descricao,
+      tipo: tecnico.tipo,
+    }])
+    .select('id, nome, telefone, descricao, tipo, created_at, updated_at')
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
+
+export const updateNumeroTecnico = async (id: string, updates: Partial<NumeroTecnico>) => {
+  const updateData: any = {
+    updated_at: new Date().toISOString(),
+  };
+  
+  if (updates.nome) updateData.nome = updates.nome;
+  if (updates.telefone) updateData.telefone = updates.telefone;
+  if (updates.descricao !== undefined) updateData.descricao = updates.descricao;
+  if (updates.tipo) updateData.tipo = updates.tipo;
+  
+  const { data, error } = await supabase
+    .from('numero_tecnicos')
+    .update(updateData)
+    .eq('id', id)
+    .select('id, nome, telefone, descricao, tipo, created_at, updated_at')
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
+
+export const deleteNumeroTecnico = async (id: string) => {
+  const { error } = await supabase
+    .from('numero_tecnicos')
+    .delete()
+    .eq('id', id);
+  
+  if (error) throw error;
 };

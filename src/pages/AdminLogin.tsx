@@ -56,10 +56,10 @@ export default function AdminLogin() {
               </svg>
             </div>
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Admin Login
+              Painel de Gerenciamento
             </CardTitle>
             <CardDescription className="text-base">
-              Entre com suas credenciais para acessar o painel administrativo
+              Acesso restrito. Autentique-se para continuar
             </CardDescription>
           </CardHeader>
           <CardContent>

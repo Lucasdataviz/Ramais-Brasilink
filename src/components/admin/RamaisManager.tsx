@@ -35,7 +35,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Ramal, Departamento } from '@/lib/types';
-import { getRamais, deleteRamal, updateRamal, createRamal, getAllDepartamentos } from '@/lib/supabase';
+import { getRamais, deleteRamal, updateRamal, createRamal, getDepartamentosFromRamais } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Phone, Eye, Copy, User, Server, Network, Lock, Edit, Trash2, Settings, Plus } from 'lucide-react';
 
@@ -72,28 +72,22 @@ export const RamaisManager = () => {
     if (searchTerm === '') {
       setFilteredRamais(ramais);
     } else {
-      const searchLower = searchTerm.toLowerCase();
       const filtered = ramais.filter(
-        (ramal) => {
-          const dept = departamentos.find(d => d.id === ramal.departamento || d.nome === ramal.departamento);
-          const deptNome = dept?.nome || ramal.departamento || '';
-          return (
-            ramal.nome.toLowerCase().includes(searchLower) ||
-            ramal.ramal.includes(searchTerm) ||
-            deptNome.toLowerCase().includes(searchLower)
-          );
-        }
+        (ramal) =>
+          ramal.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          ramal.ramal.includes(searchTerm) ||
+          ramal.departamento.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredRamais(filtered);
     }
-  }, [searchTerm, ramais, departamentos]);
+  }, [searchTerm, ramais]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       const [ramaisData, deptData] = await Promise.all([
         getRamais(),
-        getAllDepartamentos()
+        getDepartamentosFromRamais()
       ]);
       setRamais(ramaisData);
       setFilteredRamais(ramaisData);
@@ -121,7 +115,7 @@ export const RamaisManager = () => {
     setCreateForm({
       nome: '',
       ramal: '',
-      departamento: departamentos.filter(d => d.ativo).length > 0 ? departamentos.filter(d => d.ativo)[0].id : '',
+      departamento: departamentos.length > 0 ? departamentos[0].nome : '',
       servidor_sip: '',
       usuario: '',
       dominio: '',
@@ -369,7 +363,7 @@ export const RamaisManager = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {departamentos.filter(d => d.ativo).map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
+                      <SelectItem key={dept.id} value={dept.nome}>
                         <div className="flex items-center gap-2">
                           <div 
                             className="w-3 h-3 rounded-full"

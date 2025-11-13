@@ -13,6 +13,8 @@ export interface Departamento {
   ordem: number;
   ativo: boolean;
   departamento_pai?: string | null; // ID do departamento pai (para hierarquia)
+  supervisor?: string | null; // Nome do supervisor (ex: Maria)
+  coordenador?: string | null; // Nome do coordenador (ex: Floriano)
   created_at: string;
   updated_at: string;
 }
@@ -110,4 +112,19 @@ export interface AuditLog {
   ip_address: string | null;
   user_agent: string | null;
   created_at: string;
+}
+
+// ========================================
+// Interface para Número de Técnicos
+// ========================================
+export type TipoTecnico = 'Rio Verde' | 'Viçosa' | 'Tianguá' | 'Frecheirinha' | 'Infraestrutura';
+
+export interface NumeroTecnico {
+  id: string;
+  nome: string;
+  telefone: string; // Número de telefone do técnico
+  descricao: string; // Função do técnico (ex: Instalação, Manutenção)
+  tipo: TipoTecnico; // Tipo: Rio Verde, Viçosa, Tianguá, Frecheirinha, Infraestrutura
+  created_at: string;
+  updated_at: string;
 }
