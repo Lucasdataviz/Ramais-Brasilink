@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
+// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
@@ -27,18 +28,3 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
-```
-
----
-
-## 📋 **Configuração no Coolify:**
-
-### **Opção 1: Com Dockerfile (Recomendado)**
-1. No Coolify, adicione seu repositório GitHub
-2. Escolha **"Docker"** como tipo de build
-3. **Build Command:** (deixe vazio, o Dockerfile cuida)
-4. **Port:** `80`
-5. Variáveis de ambiente (se tiver Supabase):
-```
-   VITE_SUPABASE_URL=sua_url
-   VITE_SUPABASE_ANON_KEY=sua_key
