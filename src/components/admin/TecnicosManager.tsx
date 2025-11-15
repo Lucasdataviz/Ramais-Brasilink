@@ -37,8 +37,12 @@ import {
 } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Wrench, Plus, Edit, Trash2, Phone } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const TIPOS_TECNICO: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura','Araquem'];
+const TIPOS_TECNICO_PREDEFINIDOS: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura', 'Araquém'];
 
 export const TecnicosManager = () => {
   const [tecnicos, setTecnicos] = useState<NumeroTecnico[]>([]);
@@ -47,6 +51,9 @@ export const TecnicosManager = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedTecnico, setSelectedTecnico] = useState<NumeroTecnico | null>(null);
   const [saving, setSaving] = useState(false);
+  const [cidadeOpen, setCidadeOpen] = useState(false);
+  const [cidadesDisponiveis, setCidadesDisponiveis] = useState<string[]>([]);
+  const [cidadeSearch, setCidadeSearch] = useState('');
   const [formData, setFormData] = useState({
     nome: '',
     telefone: '',
@@ -63,6 +70,9 @@ export const TecnicosManager = () => {
       setLoading(true);
       const data = await getNumeroTecnicos();
       setTecnicos(data);
+      // Extrair cidades únicas dos técnicos
+      const cidades = [...new Set(data.map(t => t.tipo))];
+      setCidadesDisponiveis([...TIPOS_TECNICO_PREDEFINIDOS, ...cidades.filter(c => !TIPOS_TECNICO_PREDEFINIDOS.includes(c))]);
     } catch (error) {
       console.error('Error loading tecnicos:', error);
       toast.error('Erro ao carregar técnicos');
@@ -78,6 +88,7 @@ export const TecnicosManager = () => {
       descricao: '',
       tipo: 'Rio Verde',
     });
+    setCidadeSearch('');
     setCreateDialogOpen(true);
   };
 
@@ -100,12 +111,21 @@ export const TecnicosManager = () => {
 
     try {
       setSaving(true);
-      await createNumeroTecnico({
+      const novoTecnico = await createNumeroTecnico({
         nome: formData.nome,
         telefone: formData.telefone,
         descricao: formData.descricao,
         tipo: formData.tipo,
       });
+      
+      // Criar notificação
+      try {
+        const { criarNotificacaoTecnicoCriado } = await import('@/lib/supabase');
+        await criarNotificacaoTecnicoCriado(novoTecnico);
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError);
+      }
+      
       toast.success('Técnico criado com sucesso!');
       setCreateDialogOpen(false);
       loadTecnicos();
@@ -125,12 +145,21 @@ export const TecnicosManager = () => {
 
     try {
       setSaving(true);
-      await updateNumeroTecnico(selectedTecnico.id, {
+      const tecnicoAtualizado = await updateNumeroTecnico(selectedTecnico.id, {
         nome: formData.nome,
         telefone: formData.telefone,
         descricao: formData.descricao,
         tipo: formData.tipo,
       });
+      
+      // Criar notificação
+      try {
+        const { criarNotificacaoTecnicoAtualizado } = await import('@/lib/supabase');
+        await criarNotificacaoTecnicoAtualizado(selectedTecnico, tecnicoAtualizado);
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError);
+      }
+      
       toast.success('Técnico atualizado com sucesso!');
       setEditDialogOpen(false);
       loadTecnicos();
@@ -158,13 +187,13 @@ export const TecnicosManager = () => {
   };
 
   const getTipoBadgeColor = (tipo: TipoTecnico) => {
-    const colors: Record<TipoTecnico, string> = {
+    const colors: Record<string, string> = {
       'Rio Verde': 'bg-green-500',
       'Viçosa': 'bg-blue-500',
       'Tianguá': 'bg-purple-500',
       'Frecheirinha': 'bg-orange-500',
       'Infraestrutura': 'bg-red-500',
-      'Araquem': 'bg-red-500',
+      'Araquém': 'bg-cyan-500',
     };
     return colors[tipo] || 'bg-gray-500';
   };
@@ -300,22 +329,83 @@ export const TecnicosManager = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="create-tipo">Tipo *</Label>
-              <Select
+              <Label htmlFor="create-tipo">Cidade *</Label>
+              <Popover open={cidadeOpen} onOpenChange={setCidadeOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={cidadeOpen}
+                    className="w-full justify-between"
+                  >
+                    {formData.tipo || "Selecione uma cidade ou digite..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput 
+                      placeholder="Buscar cidade ou digite nova..." 
+                      value={cidadeSearch}
+                      onValueChange={(value) => setCidadeSearch(value)}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        {cidadeSearch && (
+                          <div className="py-2">
+                            <p className="text-sm text-muted-foreground mb-2">Cidade não encontrada</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => {
+                                setFormData({ ...formData, tipo: cidadeSearch });
+                                setCidadeSearch('');
+                                setCidadeOpen(false);
+                              }}
+                            >
+                              Criar "{cidadeSearch}"
+                            </Button>
+                          </div>
+                        )}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {cidadesDisponiveis
+                          .filter(cidade => 
+                            !cidadeSearch || 
+                            cidade.toLowerCase().includes(cidadeSearch.toLowerCase())
+                          )
+                          .map((cidade) => (
+                            <CommandItem
+                              key={cidade}
+                              value={cidade}
+                              onSelect={() => {
+                                setFormData({ ...formData, tipo: cidade });
+                                setCidadeSearch('');
+                                setCidadeOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.tipo === cidade ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {cidade}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <Input
+                id="create-tipo"
                 value={formData.tipo}
-                onValueChange={(value: TipoTecnico) => setFormData({ ...formData, tipo: value })}
-              >
-                <SelectTrigger id="create-tipo">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIPOS_TECNICO.map((tipo) => (
-                    <SelectItem key={tipo} value={tipo}>
-                      {tipo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                placeholder="Ou digite uma nova cidade..."
+                className="mt-2"
+              />
             </div>
 
             <div className="space-y-2">
@@ -372,22 +462,83 @@ export const TecnicosManager = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-tipo">Tipo *</Label>
-              <Select
+              <Label htmlFor="edit-tipo">Cidade *</Label>
+              <Popover open={cidadeOpen} onOpenChange={setCidadeOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={cidadeOpen}
+                    className="w-full justify-between"
+                  >
+                    {formData.tipo || "Selecione uma cidade ou digite..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput 
+                      placeholder="Buscar cidade ou digite nova..." 
+                      value={cidadeSearch}
+                      onValueChange={(value) => setCidadeSearch(value)}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        {cidadeSearch && (
+                          <div className="py-2">
+                            <p className="text-sm text-muted-foreground mb-2">Cidade não encontrada</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => {
+                                setFormData({ ...formData, tipo: cidadeSearch });
+                                setCidadeSearch('');
+                                setCidadeOpen(false);
+                              }}
+                            >
+                              Criar "{cidadeSearch}"
+                            </Button>
+                          </div>
+                        )}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {cidadesDisponiveis
+                          .filter(cidade => 
+                            !cidadeSearch || 
+                            cidade.toLowerCase().includes(cidadeSearch.toLowerCase())
+                          )
+                          .map((cidade) => (
+                            <CommandItem
+                              key={cidade}
+                              value={cidade}
+                              onSelect={() => {
+                                setFormData({ ...formData, tipo: cidade });
+                                setCidadeSearch('');
+                                setCidadeOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.tipo === cidade ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {cidade}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <Input
+                id="edit-tipo"
                 value={formData.tipo}
-                onValueChange={(value: TipoTecnico) => setFormData({ ...formData, tipo: value })}
-              >
-                <SelectTrigger id="edit-tipo">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIPOS_TECNICO.map((tipo) => (
-                    <SelectItem key={tipo} value={tipo}>
-                      {tipo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                placeholder="Ou digite uma nova cidade..."
+                className="mt-2"
+              />
             </div>
 
             <div className="space-y-2">

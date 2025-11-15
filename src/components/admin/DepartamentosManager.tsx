@@ -29,7 +29,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Departamento, Ramal } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import {
   getAllDepartamentos,
   createDepartamento,
@@ -39,22 +42,55 @@ import {
   getRamais,
   updateRamal,
   getRamalsByDepartamento,
+  criarNotificacaoDepartamentoCriado,
 } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Building2, Plus, Edit, Trash2, Power, PowerOff, Phone } from 'lucide-react';
+import { 
+  Building2, Plus, Edit, Trash2, Power, PowerOff, Phone, Check, ChevronsUpDown, Search,
+  Users, Headphones, Server, Network, CreditCard, Wrench, Shield, FileText, 
+  Briefcase, Settings, HelpCircle, MessageSquare, Radio, Cable, Router,
+  HardDrive, Database, Monitor, Smartphone, Laptop, Mail, Calendar, Clock
+} from 'lucide-react';
 
-// Ícones predefinidos
+// Ícones predefinidos para telecomunicações
 const PREDEFINED_ICONS = [
-  '🏢', '💼', '📞', '🛠️', '💻', '📊', '💰', '📦', '🚚', '🎯', 
-  '⭐', '🔥', '🌟', '💎', '🎨', '🎭', '🎪', '🎬', '🎮', '🎸',
-  '🎺', '🎻', '🎤', '🎧', '🎵', '🎶', '🎼', '🎹', '🥁', '🎲',
-  '🏆', '🎖️', '🏅', '🎗️', '🎟️', '🎫', '🎪', '🎭', '🎨', '🖼️',
-  '📷', '📹', '🎥', '📺', '📻', '📱', '💻', '⌚', '🖥️', '⌨️',
-  '🖱️', '🖨️', '📠', '📞', '☎️', '📟', '📠', '📺', '📻', '🔊',
-  '🔉', '🔈', '📢', '📣', '📯', '🔔', '🔕', '📻', '📡', '💬',
-  '💭', '🗨️', '🗯️', '💤', '💢', '💥', '💫', '💦', '💨', '🔥',
-  '⭐', '🌟', '✨', '💫', '⚡', '☄️', '💥', '💢', '💤', '💭'
+  { name: 'Empresa', icon: Building2 },
+  { name: 'Atendimento', icon: Headphones },
+  { name: 'TI', icon: Server },
+  { name: 'Rede', icon: Network },
+  { name: 'Caixa', icon: CreditCard },
+  { name: 'Técnico', icon: Wrench },
+  { name: 'Segurança', icon: Shield },
+  { name: 'Administração', icon: FileText },
+  { name: 'SAC', icon: MessageSquare },
+  { name: 'Funcionários', icon: Users },
+  { name: 'Suporte', icon: HelpCircle },
+  { name: 'Telefonia', icon: Phone },
+  { name: 'Rádio', icon: Radio },
+  { name: 'Cabo', icon: Cable },
+  { name: 'Roteador', icon: Router },
+  { name: 'Armazenamento', icon: HardDrive },
+  { name: 'Banco de Dados', icon: Database },
+  { name: 'Monitor', icon: Monitor },
+  { name: 'Celular', icon: Smartphone },
+  { name: 'Notebook', icon: Laptop },
+  { name: 'Email', icon: Mail },
+  { name: 'Agenda', icon: Calendar },
+  { name: 'Relógio', icon: Clock },
+  { name: 'Configurações', icon: Settings },
+  { name: 'Negócios', icon: Briefcase },
 ];
+
+// Função para obter ícone por nome ou emoji
+const getIconComponent = (iconName: string) => {
+  const iconData = PREDEFINED_ICONS.find(i => i.name === iconName);
+  if (iconData) {
+    const IconComponent = iconData.icon;
+    return <IconComponent className="h-5 w-5" />;
+  }
+  // Fallback para emoji se não encontrar
+  return <span className="text-xl">{iconName}</span>;
+};
 
 // Cores predefinidas
 const PREDEFINED_COLORS = [
@@ -70,9 +106,12 @@ export const DepartamentosManager = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedDepartamento, setSelectedDepartamento] = useState<Departamento | null>(null);
   const [saving, setSaving] = useState(false);
+  const [supervisorOpen, setSupervisorOpen] = useState(false);
+  const [coordenadorOpen, setCoordenadorOpen] = useState(false);
+  const [ramaisSearch, setRamaisSearch] = useState('');
   const [formData, setFormData] = useState({
     nome: '',
-    icone: '🏢',
+    icone: 'Empresa',
     cor: '#3b82f6',
     supervisor: '',
     coordenador: '',
@@ -112,13 +151,14 @@ export const DepartamentosManager = () => {
   const handleOpenCreateDialog = () => {
     setFormData({
       nome: '',
-      icone: '🏢',
+      icone: 'Empresa',
       cor: '#3b82f6',
       supervisor: '',
       coordenador: '',
       status: 'ativo',
       ramaisSelecionados: [],
     });
+    setRamaisSearch('');
     setCreateDialogOpen(true);
   };
 
@@ -132,7 +172,7 @@ export const DepartamentosManager = () => {
       
       setFormData({
         nome: departamento.nome,
-        icone: departamento.icone || '🏢',
+        icone: departamento.icone || 'Empresa',
         cor: departamento.cor || '#3b82f6',
         supervisor: departamento.supervisor || '',
         coordenador: departamento.coordenador || '',
@@ -143,7 +183,7 @@ export const DepartamentosManager = () => {
       console.error('Error loading ramais:', error);
       setFormData({
         nome: departamento.nome,
-        icone: departamento.icone || '🏢',
+        icone: departamento.icone || 'Empresa',
         cor: departamento.cor || '#3b82f6',
         supervisor: departamento.supervisor || '',
         coordenador: departamento.coordenador || '',
@@ -181,6 +221,13 @@ export const DepartamentosManager = () => {
           for (const ramalId of formData.ramaisSelecionados) {
             await updateRamal(ramalId, { departamento: formData.nome });
           }
+        }
+        
+        // Criar notificação
+        try {
+          await criarNotificacaoDepartamentoCriado(novoDepartamento);
+        } catch (notifError) {
+          console.error('Error creating notification:', notifError);
         }
         
         toast.success('Departamento criado com sucesso!');
@@ -329,6 +376,16 @@ export const DepartamentosManager = () => {
     return ramais.filter(r => r.departamento === departamento.nome || r.departamento === departamento.id);
   };
 
+  const filteredRamais = ramais.filter(ramal => {
+    if (!ramaisSearch) return true;
+    const search = ramaisSearch.toLowerCase();
+    return (
+      ramal.nome.toLowerCase().includes(search) ||
+      ramal.ramal.toLowerCase().includes(search) ||
+      ramal.departamento?.toLowerCase().includes(search)
+    );
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -387,7 +444,7 @@ export const DepartamentosManager = () => {
                     return (
                       <TableRow key={departamento.id}>
                         <TableCell>
-                          <span className="text-2xl">{departamento.icone || '🏢'}</span>
+                          {getIconComponent(departamento.icone || 'Empresa')}
                         </TableCell>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
@@ -504,20 +561,106 @@ export const DepartamentosManager = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="create-supervisor">Supervisor</Label>
+                <Popover open={supervisorOpen} onOpenChange={setSupervisorOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={supervisorOpen}
+                      className="w-full justify-between"
+                    >
+                      {formData.supervisor || "Selecione um ramal ou digite..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar por nome ou ramal..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum ramal encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {ramais.map((ramal) => (
+                            <CommandItem
+                              key={ramal.id}
+                              value={`${ramal.nome} - ${ramal.ramal}`}
+                              onSelect={() => {
+                                setFormData({ ...formData, supervisor: `${ramal.nome} - ${ramal.ramal}` });
+                                setSupervisorOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.supervisor === `${ramal.nome} - ${ramal.ramal}` ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <Phone className="mr-2 h-4 w-4" />
+                              {ramal.nome} - {ramal.ramal}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Input
                   id="create-supervisor"
                   value={formData.supervisor}
                   onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
-                  placeholder="Ex: Maria"
+                  placeholder="Ou digite manualmente..."
+                  className="mt-2"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="create-coordenador">Coordenador</Label>
+                <Popover open={coordenadorOpen} onOpenChange={setCoordenadorOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={coordenadorOpen}
+                      className="w-full justify-between"
+                    >
+                      {formData.coordenador || "Selecione um ramal ou digite..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar por nome ou ramal..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum ramal encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {ramais.map((ramal) => (
+                            <CommandItem
+                              key={ramal.id}
+                              value={`${ramal.nome} - ${ramal.ramal}`}
+                              onSelect={() => {
+                                setFormData({ ...formData, coordenador: `${ramal.nome} - ${ramal.ramal}` });
+                                setCoordenadorOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.coordenador === `${ramal.nome} - ${ramal.ramal}` ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <Phone className="mr-2 h-4 w-4" />
+                              {ramal.nome} - {ramal.ramal}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Input
                   id="create-coordenador"
                   value={formData.coordenador}
                   onChange={(e) => setFormData({ ...formData, coordenador: e.target.value })}
-                  placeholder="Ex: Floriano"
+                  placeholder="Ou digite manualmente..."
+                  className="mt-2"
                 />
               </div>
             </div>
@@ -535,21 +678,41 @@ export const DepartamentosManager = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <ScrollArea className="h-60">
-                        {PREDEFINED_ICONS.map((icon) => (
-                          <SelectItem key={icon} value={icon}>
-                            <span className="text-xl">{icon}</span>
-                          </SelectItem>
-                        ))}
+                        {PREDEFINED_ICONS.map((iconData) => {
+                          const IconComponent = iconData.icon;
+                          return (
+                            <SelectItem key={iconData.name} value={iconData.name}>
+                              <div className="flex items-center gap-2">
+                                <IconComponent className="h-4 w-4" />
+                                <span>{iconData.name}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </ScrollArea>
                     </SelectContent>
                   </Select>
-                  <Input
-                    type="text"
+                  <Select
                     value={formData.icone}
-                    onChange={(e) => setFormData({ ...formData, icone: e.target.value })}
-                    placeholder="Ou digite um emoji"
-                    className="w-24"
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, icone: value })}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PREDEFINED_ICONS.map((iconData) => {
+                        const IconComponent = iconData.icon;
+                        return (
+                          <SelectItem key={iconData.name} value={iconData.name}>
+                            <div className="flex items-center gap-2">
+                              <IconComponent className="h-4 w-4" />
+                              <span>{iconData.name}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="space-y-2">
@@ -604,28 +767,36 @@ export const DepartamentosManager = () => {
 
             <div className="space-y-2 border-t pt-4">
               <Label>Vincular Ramais Existentes</Label>
-              <ScrollArea className="h-40 border rounded-md p-4">
-                <div className="space-y-2">
-                  {ramais.map((ramal) => (
-                    <div key={ramal.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`ramal-${ramal.id}`}
-                        checked={formData.ramaisSelecionados.includes(ramal.id)}
-                        onCheckedChange={() => toggleRamalSelection(ramal.id)}
-                      />
-                      <Label
-                        htmlFor={`ramal-${ramal.id}`}
-                        className="text-sm font-normal cursor-pointer flex-1"
-                      >
-                        {ramal.nome} - {ramal.ramal}
-                      </Label>
-                    </div>
-                  ))}
-                  {ramais.length === 0 && (
-                    <p className="text-sm text-muted-foreground">Nenhum ramal disponível</p>
-                  )}
-                </div>
-              </ScrollArea>
+              <div className="space-y-2">
+                <Input
+                  placeholder="Buscar por setor, ramal ou nome..."
+                  value={ramaisSearch}
+                  onChange={(e) => setRamaisSearch(e.target.value)}
+                  className="w-full"
+                />
+                <ScrollArea className="h-40 border rounded-md p-4">
+                  <div className="space-y-2">
+                    {filteredRamais.map((ramal) => (
+                      <div key={ramal.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`ramal-${ramal.id}`}
+                          checked={formData.ramaisSelecionados.includes(ramal.id)}
+                          onCheckedChange={() => toggleRamalSelection(ramal.id)}
+                        />
+                        <Label
+                          htmlFor={`ramal-${ramal.id}`}
+                          className="text-sm font-normal cursor-pointer flex-1"
+                        >
+                          {ramal.nome} - {ramal.ramal} {ramal.departamento && `(${ramal.departamento})`}
+                        </Label>
+                      </div>
+                    ))}
+                    {filteredRamais.length === 0 && (
+                      <p className="text-sm text-muted-foreground">Nenhum ramal encontrado</p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
           </div>
 
@@ -663,20 +834,106 @@ export const DepartamentosManager = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-supervisor">Supervisor</Label>
+                <Popover open={supervisorOpen} onOpenChange={setSupervisorOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={supervisorOpen}
+                      className="w-full justify-between"
+                    >
+                      {formData.supervisor || "Selecione um ramal ou digite..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar por nome ou ramal..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum ramal encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {ramais.map((ramal) => (
+                            <CommandItem
+                              key={ramal.id}
+                              value={`${ramal.nome} - ${ramal.ramal}`}
+                              onSelect={() => {
+                                setFormData({ ...formData, supervisor: `${ramal.nome} - ${ramal.ramal}` });
+                                setSupervisorOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.supervisor === `${ramal.nome} - ${ramal.ramal}` ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <Phone className="mr-2 h-4 w-4" />
+                              {ramal.nome} - {ramal.ramal}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Input
                   id="edit-supervisor"
                   value={formData.supervisor}
                   onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
-                  placeholder="Ex: Maria"
+                  placeholder="Ou digite manualmente..."
+                  className="mt-2"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-coordenador">Coordenador</Label>
+                <Popover open={coordenadorOpen} onOpenChange={setCoordenadorOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={coordenadorOpen}
+                      className="w-full justify-between"
+                    >
+                      {formData.coordenador || "Selecione um ramal ou digite..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar por nome ou ramal..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum ramal encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {ramais.map((ramal) => (
+                            <CommandItem
+                              key={ramal.id}
+                              value={`${ramal.nome} - ${ramal.ramal}`}
+                              onSelect={() => {
+                                setFormData({ ...formData, coordenador: `${ramal.nome} - ${ramal.ramal}` });
+                                setCoordenadorOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.coordenador === `${ramal.nome} - ${ramal.ramal}` ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <Phone className="mr-2 h-4 w-4" />
+                              {ramal.nome} - {ramal.ramal}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Input
                   id="edit-coordenador"
                   value={formData.coordenador}
                   onChange={(e) => setFormData({ ...formData, coordenador: e.target.value })}
-                  placeholder="Ex: Floriano"
+                  placeholder="Ou digite manualmente..."
+                  className="mt-2"
                 />
               </div>
             </div>
@@ -694,21 +951,41 @@ export const DepartamentosManager = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <ScrollArea className="h-60">
-                        {PREDEFINED_ICONS.map((icon) => (
-                          <SelectItem key={icon} value={icon}>
-                            <span className="text-xl">{icon}</span>
-                          </SelectItem>
-                        ))}
+                        {PREDEFINED_ICONS.map((iconData) => {
+                          const IconComponent = iconData.icon;
+                          return (
+                            <SelectItem key={iconData.name} value={iconData.name}>
+                              <div className="flex items-center gap-2">
+                                <IconComponent className="h-4 w-4" />
+                                <span>{iconData.name}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </ScrollArea>
                     </SelectContent>
                   </Select>
-                  <Input
-                    type="text"
+                  <Select
                     value={formData.icone}
-                    onChange={(e) => setFormData({ ...formData, icone: e.target.value })}
-                    placeholder="Ou digite um emoji"
-                    className="w-24"
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, icone: value })}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PREDEFINED_ICONS.map((iconData) => {
+                        const IconComponent = iconData.icon;
+                        return (
+                          <SelectItem key={iconData.name} value={iconData.name}>
+                            <div className="flex items-center gap-2">
+                              <IconComponent className="h-4 w-4" />
+                              <span>{iconData.name}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="space-y-2">
@@ -763,28 +1040,36 @@ export const DepartamentosManager = () => {
 
             <div className="space-y-2 border-t pt-4">
               <Label>Vincular Ramais Existentes</Label>
-              <ScrollArea className="h-40 border rounded-md p-4">
-                <div className="space-y-2">
-                  {ramais.map((ramal) => (
-                    <div key={ramal.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`edit-ramal-${ramal.id}`}
-                        checked={formData.ramaisSelecionados.includes(ramal.id)}
-                        onCheckedChange={() => toggleRamalSelection(ramal.id)}
-                      />
-                      <Label
-                        htmlFor={`edit-ramal-${ramal.id}`}
-                        className="text-sm font-normal cursor-pointer flex-1"
-                      >
-                        {ramal.nome} - {ramal.ramal}
-                      </Label>
-                    </div>
-                  ))}
-                  {ramais.length === 0 && (
-                    <p className="text-sm text-muted-foreground">Nenhum ramal disponível</p>
-                  )}
-                </div>
-              </ScrollArea>
+              <div className="space-y-2">
+                <Input
+                  placeholder="Buscar por setor, ramal ou nome..."
+                  value={ramaisSearch}
+                  onChange={(e) => setRamaisSearch(e.target.value)}
+                  className="w-full"
+                />
+                <ScrollArea className="h-40 border rounded-md p-4">
+                  <div className="space-y-2">
+                    {filteredRamais.map((ramal) => (
+                      <div key={ramal.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`edit-ramal-${ramal.id}`}
+                          checked={formData.ramaisSelecionados.includes(ramal.id)}
+                          onCheckedChange={() => toggleRamalSelection(ramal.id)}
+                        />
+                        <Label
+                          htmlFor={`edit-ramal-${ramal.id}`}
+                          className="text-sm font-normal cursor-pointer flex-1"
+                        >
+                          {ramal.nome} - {ramal.ramal} {ramal.departamento && `(${ramal.departamento})`}
+                        </Label>
+                      </div>
+                    ))}
+                    {filteredRamais.length === 0 && (
+                      <p className="text-sm text-muted-foreground">Nenhum ramal encontrado</p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
           </div>
 

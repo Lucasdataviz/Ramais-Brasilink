@@ -35,7 +35,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Ramal, Departamento } from '@/lib/types';
-import { getRamais, deleteRamal, updateRamal, createRamal, getDepartamentosFromRamais } from '@/lib/supabase';
+import { 
+  getRamais, deleteRamal, updateRamal, createRamal, getDepartamentosFromRamais,
+  criarNotificacaoRamalCriado, criarNotificacaoRamalAtualizado
+} from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Phone, Eye, Copy, User, Server, Network, Lock, Edit, Trash2, Settings, Plus } from 'lucide-react';
 
@@ -134,7 +137,13 @@ export const RamaisManager = () => {
 
     try {
       setSaving(true);
-      await createRamal(createForm);
+      const novoRamal = await createRamal(createForm);
+      // Criar notificação
+      try {
+        await criarNotificacaoRamalCriado(novoRamal);
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError);
+      }
       toast.success('Ramal criado com sucesso!');
       setCreateDialogOpen(false);
       loadData();
@@ -156,6 +165,13 @@ export const RamaisManager = () => {
 
     try {
       setSaving(true);
+      // Buscar ramal antigo para comparar
+      const ramalAntigo = ramais.find(r => r.id === editForm.id);
+      if (!ramalAntigo) {
+        toast.error('Ramal não encontrado');
+        return;
+      }
+
       await updateRamal(editForm.id, {
         nome: editForm.nome,
         ramal: editForm.ramal,
@@ -167,6 +183,13 @@ export const RamaisManager = () => {
         senha: editForm.senha,
         status: editForm.status,
       });
+      
+      // Criar notificação se houver mudanças relevantes
+      try {
+        await criarNotificacaoRamalAtualizado(ramalAntigo, editForm);
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError);
+      }
       
       toast.success('Ramal atualizado com sucesso!');
       setEditDialogOpen(false);

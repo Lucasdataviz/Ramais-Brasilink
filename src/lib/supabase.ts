@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { AdminUser, Ramal, Departamento, UsuarioTelefonia, NumeroTecnico } from './types';
+import { AdminUser, Ramal, Departamento, UsuarioTelefonia, NumeroTecnico, Notificacao } from './types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zamksbryvuuaxxwszdgc.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphbWtzYnJ5dnV1YXh4d3N6ZGdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4OTA2NTUsImV4cCI6MjA2MDQ2NjY1NX0.KKcW7dlvWHBwT7dnKmeDNwTIjK2chWkgCMvGYhghOkY';
@@ -507,4 +507,234 @@ export const deleteNumeroTecnico = async (id: string) => {
     .eq('id', id);
   
   if (error) throw error;
+};
+
+// ========================================
+// FUNÇÕES PARA NOTIFICAÇÕES
+// ========================================
+
+export const createNotificacao = async (notificacao: Omit<Notificacao, 'id' | 'created_at'>) => {
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 1); // Expira em 1 dia
+  
+  const { data, error } = await supabase
+    .from('notificacoes')
+    .insert([{
+      ...notificacao,
+      expires_at: expiresAt.toISOString(),
+      created_at: new Date().toISOString(),
+    }])
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
+
+export const getNotificacoesAtivas = async (): Promise<Notificacao[]> => {
+  const now = new Date().toISOString();
+  
+  const { data, error } = await supabase
+    .from('notificacoes')
+    .select('*')
+    .eq('ativo', true)
+    .gte('expires_at', now)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  
+  if (error) {
+    console.error('Error fetching notificacoes:', error);
+    return [];
+  }
+  return data || [];
+};
+
+export const marcarNotificacaoComoInativa = async (id: string) => {
+  const { error } = await supabase
+    .from('notificacoes')
+    .update({ ativo: false })
+    .eq('id', id);
+  
+  if (error) throw error;
+};
+
+// Função auxiliar para obter últimos 4 dígitos do ramal
+const getUltimosDigitos = (ramal: string | number) => {
+  // Converte para string, remove espaços e caracteres não numéricos, pega últimos 4 dígitos
+  const ramalStr = String(ramal || '').trim();
+  const ramalLimpo = ramalStr.replace(/\D/g, '');
+  if (ramalLimpo.length >= 4) {
+    return ramalLimpo.slice(-4);
+  }
+  return ramalLimpo || '0000';
+};
+
+// Função auxiliar para criar notificação de mudança de ramal
+export const criarNotificacaoRamalAtualizado = async (ramalAntigo: Ramal, ramalNovo: Ramal) => {
+  const mudancas: string[] = [];
+  const ramalAntigoShort = getUltimosDigitos(ramalAntigo.ramal);
+  const ramalNovoShort = getUltimosDigitos(ramalNovo.ramal);
+  const nomeDisplay = ramalNovo.nome || ramalAntigo.nome || 'sem nome';
+  
+  // Verificar todas as mudanças
+  if (ramalAntigo.ramal !== ramalNovo.ramal) {
+    mudancas.push(`número de ${ramalAntigoShort} para ${ramalNovoShort}`);
+  }
+  if (ramalAntigo.nome !== ramalNovo.nome) {
+    mudancas.push(`nome de "${ramalAntigo.nome || 'sem nome'}" para "${ramalNovo.nome || 'sem nome'}"`);
+  }
+  if (ramalAntigo.departamento !== ramalNovo.departamento) {
+    const deptAntigo = ramalAntigo.departamento || 'sem departamento';
+    const deptNovo = ramalNovo.departamento || 'sem departamento';
+    mudancas.push(`departamento de "${deptAntigo}" para "${deptNovo}"`);
+  }
+  
+  if (mudancas.length > 0) {
+    // Criar mensagem incluindo TODAS as mudanças
+    const mensagem = `Foi realizada uma atualização do ramal ${ramalNovoShort} (${nomeDisplay}). ${mudancas.join(', ')}.`;
+    
+    await createNotificacao({
+      tipo: 'ramal_atualizado',
+      titulo: 'Ramal Atualizado',
+      mensagem,
+      expires_at: '', // Será definido na função
+      ativo: true,
+    });
+  }
+};
+
+// Função auxiliar para criar notificação de novo ramal
+export const criarNotificacaoRamalCriado = async (ramal: Ramal) => {
+  const ramalShort = getUltimosDigitos(ramal.ramal);
+  const nomeDisplay = ramal.nome || 'sem nome';
+  const deptDisplay = ramal.departamento ? ` no departamento "${ramal.departamento}"` : '';
+  const mensagem = `Um novo ramal foi criado com o número ${ramalShort} (${nomeDisplay})${deptDisplay}.`;
+  
+  await createNotificacao({
+    tipo: 'ramal_criado',
+    titulo: 'Novo Ramal Criado',
+    mensagem,
+    expires_at: '', // Será definido na função
+    ativo: true,
+  });
+};
+
+// Função auxiliar para criar notificação de novo departamento
+export const criarNotificacaoDepartamentoCriado = async (departamento: Departamento) => {
+  const mensagem = `Um novo departamento foi criado: "${departamento.nome}".`;
+  
+  await createNotificacao({
+    tipo: 'departamento_criado',
+    titulo: 'Novo Departamento Criado',
+    mensagem,
+    expires_at: '', // Será definido na função
+    ativo: true,
+  });
+};
+
+// Função auxiliar para criar notificação de mudança de técnico
+export const criarNotificacaoTecnicoAtualizado = async (tecnicoAntigo: NumeroTecnico, tecnicoNovo: NumeroTecnico) => {
+  const mudancas: string[] = [];
+  
+  if (tecnicoAntigo.nome !== tecnicoNovo.nome) {
+    mudancas.push(`nome de "${tecnicoAntigo.nome || 'sem nome'}" para "${tecnicoNovo.nome || 'sem nome'}"`);
+  }
+  if (tecnicoAntigo.telefone !== tecnicoNovo.telefone) {
+    mudancas.push(`número de telefone de "${tecnicoAntigo.telefone}" para "${tecnicoNovo.telefone}"`);
+  }
+  if (tecnicoAntigo.tipo !== tecnicoNovo.tipo) {
+    mudancas.push(`cidade/tipo de "${tecnicoAntigo.tipo}" para "${tecnicoNovo.tipo}"`);
+  }
+  
+  if (mudancas.length > 0) {
+    const nomeDisplay = tecnicoNovo.nome || tecnicoAntigo.nome || 'sem nome';
+    const mensagem = `Foi realizada uma atualização do técnico ${nomeDisplay}. ${mudancas.join(', ')}.`;
+    
+    await createNotificacao({
+      tipo: 'tecnico_atualizado',
+      titulo: 'Técnico Atualizado',
+      mensagem,
+      expires_at: '', // Será definido na função
+      ativo: true,
+    });
+  }
+};
+
+// Função auxiliar para criar notificação de novo técnico
+export const criarNotificacaoTecnicoCriado = async (tecnico: NumeroTecnico) => {
+  const mensagem = `Um novo técnico foi criado: ${tecnico.nome} (${tecnico.telefone}) - ${tecnico.tipo}.`;
+  
+  await createNotificacao({
+    tipo: 'tecnico_criado',
+    titulo: 'Novo Técnico Criado',
+    mensagem,
+    expires_at: '', // Será definido na função
+    ativo: true,
+  });
+};
+
+// Função para criar notificação consolidada de múltiplas mudanças
+export const criarNotificacaoMudancasMultiplas = async (mudancas: string[]) => {
+  if (mudancas.length === 0) return;
+  
+  // Se houver apenas uma mudança, usar formato mais simples
+  if (mudancas.length === 1) {
+    const mensagem = mudancas[0];
+    await createNotificacao({
+      tipo: 'mudancas_multiplas',
+      titulo: 'Atualização',
+      mensagem,
+      expires_at: '', // Será definido na função
+      ativo: true,
+    });
+    return;
+  }
+  
+  // Múltiplas mudanças
+  const mensagem = `Foram realizadas as seguintes atualizações: ${mudancas.join(', ')}.`;
+  
+  await createNotificacao({
+    tipo: 'mudancas_multiplas',
+    titulo: 'Múltiplas Atualizações',
+    mensagem,
+    expires_at: '', // Será definido na função
+    ativo: true,
+  });
+};
+
+// Função helper para consolidar múltiplas operações em uma única notificação
+// Use esta função quando fizer várias mudanças ao mesmo tempo
+export const criarNotificacaoConsolidada = async (operacoes: {
+  tipo: 'ramal' | 'tecnico' | 'departamento';
+  acao: 'criado' | 'atualizado' | 'deletado';
+  detalhes: string;
+}[]) => {
+  if (operacoes.length === 0) return;
+  
+  const mudancas = operacoes.map(op => {
+    switch (op.tipo) {
+      case 'ramal':
+        return op.acao === 'criado' 
+          ? `novo ramal: ${op.detalhes}`
+          : op.acao === 'atualizado'
+          ? `ramal atualizado: ${op.detalhes}`
+          : `ramal deletado: ${op.detalhes}`;
+      case 'tecnico':
+        return op.acao === 'criado'
+          ? `novo técnico: ${op.detalhes}`
+          : op.acao === 'atualizado'
+          ? `técnico atualizado: ${op.detalhes}`
+          : `técnico deletado: ${op.detalhes}`;
+      case 'departamento':
+        return op.acao === 'criado'
+          ? `novo departamento: ${op.detalhes}`
+          : op.acao === 'atualizado'
+          ? `departamento atualizado: ${op.detalhes}`
+          : `departamento deletado: ${op.detalhes}`;
+      default:
+        return op.detalhes;
+    }
+  });
+  
+  await criarNotificacaoMudancasMultiplas(mudancas);
 };

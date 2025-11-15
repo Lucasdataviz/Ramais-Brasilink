@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Phone, Activity, Building2 } from 'lucide-react';
-import { getRamais } from '@/lib/supabase';
-import { Ramal } from '@/lib/types';
+import { getRamais, getAllDepartamentos } from '@/lib/supabase';
+import { Ramal, Departamento } from '@/lib/types';
 
 export const StatsCards = () => {
   const [ramais, setRamais] = useState<Ramal[]>([]);
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,8 +15,12 @@ export const StatsCards = () => {
 
   const loadStats = async () => {
     try {
-      const data = await getRamais();
-      setRamais(data);
+      const [ramaisData, departamentosData] = await Promise.all([
+        getRamais(),
+        getAllDepartamentos(),
+      ]);
+      setRamais(ramaisData);
+      setDepartamentos(departamentosData);
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {
@@ -26,7 +31,7 @@ export const StatsCards = () => {
   // Calcular estatísticas
   const totalRamais = ramais.length;
   const ramaisAtivos = ramais.filter(r => r.status === 'ativo').length;
-  const departamentos = [...new Set(ramais.map(r => r.departamento))].length;
+  const totalDepartamentos = departamentos.length;
 
   if (loading) {
     return (
@@ -86,7 +91,7 @@ export const StatsCards = () => {
               <p className="text-sm font-medium text-muted-foreground">
                 Departamentos
               </p>
-              <h3 className="text-3xl font-bold mt-2">{departamentos}</h3>
+              <h3 className="text-3xl font-bold mt-2">{totalDepartamentos}</h3>
             </div>
             <div className="p-3 rounded-full bg-purple-500/10">
               <Building2 className="h-6 w-6 text-purple-500" />

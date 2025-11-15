@@ -117,14 +117,27 @@ export interface AuditLog {
 // ========================================
 // Interface para Número de Técnicos
 // ========================================
-export type TipoTecnico = 'Rio Verde' | 'Viçosa' | 'Tianguá' | 'Frecheirinha' | 'Infraestrutura';
+export type TipoTecnico = 'Rio Verde' | 'Viçosa' | 'Tianguá' | 'Frecheirinha' | 'Infraestrutura' | 'Araquém' | string; // Permite cidade customizada
 
 export interface NumeroTecnico {
   id: string;
   nome: string;
   telefone: string; // Número de telefone do técnico
   descricao: string; // Função do técnico (ex: Instalação, Manutenção)
-  tipo: TipoTecnico; // Tipo: Rio Verde, Viçosa, Tianguá, Frecheirinha, Infraestrutura
+  tipo: TipoTecnico; // Cidade: Rio Verde, Viçosa, Tianguá, Frecheirinha, Infraestrutura, Araquém ou cidade customizada
   created_at: string;
   updated_at: string;
+}
+
+// ========================================
+// Interface para Notificações
+// ========================================
+export interface Notificacao {
+  id: string;
+  tipo: 'ramal_atualizado' | 'ramal_criado' | 'ramal_deletado' | 'departamento_criado' | 'departamento_atualizado' | 'tecnico_atualizado' | 'tecnico_criado' | 'mudancas_multiplas';
+  titulo: string;
+  mensagem: string;
+  created_at: string;
+  expires_at: string; // Data de expiração (1 dia após criação)
+  ativo: boolean;
 }
