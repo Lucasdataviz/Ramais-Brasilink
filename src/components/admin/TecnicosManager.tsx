@@ -42,7 +42,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const TIPOS_TECNICO_PREDEFINIDOS: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura', 'Araquém'];
+const TIPOS_TECNICO_PREDEFINIDOS: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura', 'Araquém', 'Tecno'];
 
 export const TecnicosManager = () => {
   const [tecnicos, setTecnicos] = useState<NumeroTecnico[]>([]);
@@ -194,6 +194,7 @@ export const TecnicosManager = () => {
       'Frecheirinha': 'bg-orange-500',
       'Infraestrutura': 'bg-red-500',
       'Araquém': 'bg-cyan-500',
+      'Tecno': 'bg-indigo-500',
     };
     return colors[tipo] || 'bg-gray-500';
   };

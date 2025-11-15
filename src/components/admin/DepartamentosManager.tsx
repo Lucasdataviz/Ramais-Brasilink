@@ -46,47 +46,16 @@ import {
 } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { 
-  Building2, Plus, Edit, Trash2, Power, PowerOff, Phone, Check, ChevronsUpDown, Search,
-  Users, Headphones, Server, Network, CreditCard, Wrench, Shield, FileText, 
-  Briefcase, Settings, HelpCircle, MessageSquare, Radio, Cable, Router,
-  HardDrive, Database, Monitor, Smartphone, Laptop, Mail, Calendar, Clock
+  Building2, Plus, Edit, Trash2, Power, PowerOff, Phone, Check, ChevronsUpDown, Search
 } from 'lucide-react';
-
-// Ícones predefinidos para telecomunicações
-const PREDEFINED_ICONS = [
-  { name: 'Empresa', icon: Building2 },
-  { name: 'Atendimento', icon: Headphones },
-  { name: 'TI', icon: Server },
-  { name: 'Rede', icon: Network },
-  { name: 'Caixa', icon: CreditCard },
-  { name: 'Técnico', icon: Wrench },
-  { name: 'Segurança', icon: Shield },
-  { name: 'Administração', icon: FileText },
-  { name: 'SAC', icon: MessageSquare },
-  { name: 'Funcionários', icon: Users },
-  { name: 'Suporte', icon: HelpCircle },
-  { name: 'Telefonia', icon: Phone },
-  { name: 'Rádio', icon: Radio },
-  { name: 'Cabo', icon: Cable },
-  { name: 'Roteador', icon: Router },
-  { name: 'Armazenamento', icon: HardDrive },
-  { name: 'Banco de Dados', icon: Database },
-  { name: 'Monitor', icon: Monitor },
-  { name: 'Celular', icon: Smartphone },
-  { name: 'Notebook', icon: Laptop },
-  { name: 'Email', icon: Mail },
-  { name: 'Agenda', icon: Calendar },
-  { name: 'Relógio', icon: Clock },
-  { name: 'Configurações', icon: Settings },
-  { name: 'Negócios', icon: Briefcase },
-];
+import { PREDEFINED_ICONS, getIconComponent as getIcon } from '@/lib/icons';
 
 // Função para obter ícone por nome ou emoji
 const getIconComponent = (iconName: string) => {
-  const iconData = PREDEFINED_ICONS.find(i => i.name === iconName);
-  if (iconData) {
-    const IconComponent = iconData.icon;
-    return <IconComponent className="h-5 w-5" />;
+  const IconComponent = getIcon(iconName);
+  if (typeof IconComponent === 'function' || typeof IconComponent === 'object') {
+    const Icon = IconComponent as any;
+    return <Icon className="h-5 w-5" />;
   }
   // Fallback para emoji se não encontrar
   return <span className="text-xl">{iconName}</span>;

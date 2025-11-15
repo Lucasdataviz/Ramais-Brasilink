@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { AdminUser, Ramal, Departamento, UsuarioTelefonia, NumeroTecnico, Notificacao } from './types';
+import { AdminUser, Ramal, Departamento, UsuarioTelefonia, NumeroTecnico, Notificacao, IPPermitido } from './types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zamksbryvuuaxxwszdgc.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphbWtzYnJ5dnV1YXh4d3N6ZGdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4OTA2NTUsImV4cCI6MjA2MDQ2NjY1NX0.KKcW7dlvWHBwT7dnKmeDNwTIjK2chWkgCMvGYhghOkY';
@@ -737,4 +737,93 @@ export const criarNotificacaoConsolidada = async (operacoes: {
   });
   
   await criarNotificacaoMudancasMultiplas(mudancas);
+};
+
+// ========================================
+// FUNÇÕES PARA IPs PERMITIDOS
+// ========================================
+
+export const getIPsPermitidos = async (): Promise<IPPermitido[]> => {
+  const { data, error } = await supabase
+    .from('ips_permitidos')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  if (error) {
+    console.error('Error fetching IPs permitidos:', error);
+    return [];
+  }
+  return data || [];
+};
+
+export const createIPPermitido = async (ipData: Omit<IPPermitido, 'id' | 'created_at' | 'updated_at'>): Promise<IPPermitido> => {
+  const { data, error } = await supabase
+    .from('ips_permitidos')
+    .insert({
+      ...ipData,
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
+
+export const updateIPPermitido = async (id: string, ipData: Partial<Omit<IPPermitido, 'id' | 'created_at'>>): Promise<IPPermitido> => {
+  const { data, error } = await supabase
+    .from('ips_permitidos')
+    .update({
+      ...ipData,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
+
+export const deleteIPPermitido = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('ips_permitidos')
+    .delete()
+    .eq('id', id);
+  
+  if (error) throw error;
+};
+
+// Função para chamar API de atualização do nginx (se configurada)
+export const updateNginxConfig = async (): Promise<boolean> => {
+  const apiUrl = import.meta.env.VITE_NGINX_UPDATE_API_URL;
+  
+  if (!apiUrl) {
+    console.log('VITE_NGINX_UPDATE_API_URL não configurada. Atualização automática desabilitada.');
+    return false;
+  }
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Adicione autenticação se necessário
+      // headers: {
+      //   'Content-Type': 'application/json',
+      //   'Authorization': `Bearer ${token}`,
+      // },
+    });
+
+    if (response.ok) {
+      return true;
+    } else {
+      console.error('Erro ao atualizar nginx:', await response.text());
+      return false;
+    }
+  } catch (error) {
+    console.error('Erro ao chamar API de atualização do nginx:', error);
+    return false;
+  }
 };

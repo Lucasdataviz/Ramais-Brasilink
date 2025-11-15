@@ -7,14 +7,12 @@ import {
   subscribeToBroadcast,
 } from '@/lib/storage';
 
-// Hook CORRIGIDO - agora busca do Supabase
+import { supabase } from '@/lib/supabase';
+
+// Hook CORRIGIDO - agora busca do Supabase com sincronização em tempo real
 export const useRealtimeExtensions = () => {
   const [extensions, setExtensions] = useState<Extension[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadExtensions();
-  }, []);
 
   const loadExtensions = async () => {
     try {
@@ -43,6 +41,49 @@ export const useRealtimeExtensions = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadExtensions();
+
+    // Inscrever-se em mudanças na tabela ramais
+    const channel = supabase
+      .channel('ramais-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ramais',
+        },
+        () => {
+          // Recarregar quando houver mudanças
+          loadExtensions();
+        }
+      )
+      .subscribe();
+
+    // Inscrever-se em mudanças na tabela departamentos
+    const deptChannel = supabase
+      .channel('departamentos-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'departamentos',
+        },
+        () => {
+          // Recarregar quando houver mudanças nos departamentos
+          loadExtensions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(deptChannel);
+    };
+  }, []);
 
   return { extensions, loading };
 };

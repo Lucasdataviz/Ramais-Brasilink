@@ -11,7 +11,8 @@ import { StatsCards } from '@/components/admin/StatsCards';
 import { UsersManager } from '@/components/admin/UsersManager';
 import { DepartamentosManager } from '@/components/admin/DepartamentosManager';
 import { TecnicosManager } from '@/components/admin/TecnicosManager';
-import { LogOut, Home, Settings, Phone, FileText, UserCircle, Building2, Wrench } from 'lucide-react';
+import { IPsManager } from '@/components/admin/IPsManager';
+import { LogOut, Home, Settings, Phone, FileText, UserCircle, Building2, Wrench, Network } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { toast } from 'sonner';
 
@@ -133,7 +134,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="ramais" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
             <TabsTrigger value="ramais" className="flex items-center gap-2">
               <Phone className="h-4 w-4" />
               Ramais
@@ -149,6 +150,10 @@ export default function Admin() {
             <TabsTrigger value="tecnicos" className="flex items-center gap-2">
               <Wrench className="h-4 w-4" />
               Técnicos
+            </TabsTrigger>
+            <TabsTrigger value="ips" className="flex items-center gap-2">
+              <Network className="h-4 w-4" />
+              IPs
             </TabsTrigger>
             <TabsTrigger value="logs" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -170,6 +175,10 @@ export default function Admin() {
 
           <TabsContent value="tecnicos" className="space-y-4">
             <TecnicosManager />
+          </TabsContent>
+
+          <TabsContent value="ips" className="space-y-4">
+            <IPsManager />
           </TabsContent>
 
           <TabsContent value="logs" className="space-y-4">

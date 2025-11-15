@@ -117,7 +117,7 @@ export interface AuditLog {
 // ========================================
 // Interface para Número de Técnicos
 // ========================================
-export type TipoTecnico = 'Rio Verde' | 'Viçosa' | 'Tianguá' | 'Frecheirinha' | 'Infraestrutura' | 'Araquém' | string; // Permite cidade customizada
+export type TipoTecnico = 'Rio Verde' | 'Viçosa' | 'Tianguá' | 'Frecheirinha' | 'Infraestrutura' | 'Araquém' | 'Tecno' | string; // Permite cidade customizada
 
 export interface NumeroTecnico {
   id: string;
@@ -140,4 +140,16 @@ export interface Notificacao {
   created_at: string;
   expires_at: string; // Data de expiração (1 dia após criação)
   ativo: boolean;
+}
+
+// ========================================
+// Interface para IPs Permitidos
+// ========================================
+export interface IPPermitido {
+  id: string;
+  ip: string;
+  descricao?: string | null;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
 }

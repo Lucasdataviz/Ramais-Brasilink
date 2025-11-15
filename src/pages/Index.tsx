@@ -6,50 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { 
-  Search, Lock, ExternalLink, Building2, Wrench, Users, Headphones, Server, 
-  Network, CreditCard, Shield, FileText, MessageSquare, HelpCircle, Phone, 
-  Radio, Cable, Router, HardDrive, Database, Monitor, Smartphone, Laptop, 
-  Mail, Calendar, Clock, Settings, Briefcase, User
+  Search, Lock, ExternalLink, Building2, Wrench, User
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NewsTicker } from '@/components/NewsTicker';
-import { getDepartamentosFromRamais, getAllDepartamentos } from '@/lib/supabase';
+import { getDepartamentosFromRamais, getAllDepartamentos, supabase } from '@/lib/supabase';
 import { Departamento } from '@/lib/types';
-
-// Mapeamento de ícones
-const ICON_MAP: Record<string, any> = {
-  'Empresa': Building2,
-  'Atendimento': Headphones,
-  'TI': Server,
-  'Rede': Network,
-  'Caixa': CreditCard,
-  'Técnico': Wrench,
-  'Segurança': Shield,
-  'Administração': FileText,
-  'SAC': MessageSquare,
-  'Funcionários': Users,
-  'Suporte': HelpCircle,
-  'Telefonia': Phone,
-  'Rádio': Radio,
-  'Cabo': Cable,
-  'Roteador': Router,
-  'Armazenamento': HardDrive,
-  'Banco de Dados': Database,
-  'Monitor': Monitor,
-  'Celular': Smartphone,
-  'Notebook': Laptop,
-  'Email': Mail,
-  'Agenda': Calendar,
-  'Relógio': Clock,
-  'Configurações': Settings,
-  'Negócios': Briefcase,
-};
+import { getIconComponent as getIcon } from '@/lib/icons';
 
 const getIconComponent = (iconName: string | undefined) => {
   if (!iconName) return <Building2 className="h-5 w-5" />;
-  const IconComponent = ICON_MAP[iconName] || Building2;
-  return <IconComponent className="h-5 w-5" />;
+  const IconComponent = getIcon(iconName);
+  if (typeof IconComponent === 'function' || typeof IconComponent === 'object') {
+    const Icon = IconComponent as any;
+    return <Icon className="h-5 w-5" />;
+  }
+  return <Building2 className="h-5 w-5" />;
 };
 
 const Index = () => {
@@ -60,6 +33,27 @@ const Index = () => {
 
   useEffect(() => {
     loadDepartamentos();
+
+    // Inscrever-se em mudanças na tabela departamentos para sincronização em tempo real
+    const channel = supabase
+      .channel('departamentos-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'departamentos',
+        },
+        () => {
+          // Recarregar quando houver mudanças
+          loadDepartamentos();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadDepartamentos = async () => {
