@@ -11,7 +11,7 @@ import { getNumeroTecnicos } from '@/lib/supabase';
 import { NumeroTecnico, TipoTecnico } from '@/lib/types';
 import { toast } from 'sonner';
 
-const TIPOS_TECNICO: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura','Araquem']
+const TIPOS_TECNICO: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura', 'Araquém', 'Tecno']
 
 export default function Tecnicos() {
   const [tecnicos, setTecnicos] = useState<NumeroTecnico[]>([]);
@@ -37,12 +37,14 @@ export default function Tecnicos() {
   };
 
   const getTipoBadgeColor = (tipo: TipoTecnico) => {
-    const colors: Record<TipoTecnico, string> = {
+    const colors: Record<string, string> = {
       'Rio Verde': 'bg-green-500',
       'Viçosa': 'bg-blue-500',
       'Tianguá': 'bg-purple-500',
       'Frecheirinha': 'bg-orange-500',
       'Infraestrutura': 'bg-red-500',
+      'Araquém': 'bg-cyan-500',
+      'Tecno': 'bg-indigo-500',
     };
     return colors[tipo] || 'bg-gray-500';
   };
@@ -64,10 +66,25 @@ export default function Tecnicos() {
 
   // Agrupar técnicos por tipo
   const tecnicosPorTipo = useMemo(() => {
-    return TIPOS_TECNICO.reduce((acc, tipo) => {
-      acc[tipo] = filteredBySearch.filter(t => t.tipo === tipo);
+    const grouped = TIPOS_TECNICO.reduce((acc, tipo) => {
+      const tecnicosDoTipo = filteredBySearch.filter(t => t.tipo === tipo);
+      if (tecnicosDoTipo.length > 0) {
+        acc[tipo] = tecnicosDoTipo;
+      }
       return acc;
-    }, {} as Record<TipoTecnico, NumeroTecnico[]>);
+    }, {} as Record<string, NumeroTecnico[]>);
+    
+    // Adicionar tipos customizados que não estão na lista predefinida
+    filteredBySearch.forEach(tecnico => {
+      if (!TIPOS_TECNICO.includes(tecnico.tipo)) {
+        if (!grouped[tecnico.tipo]) {
+          grouped[tecnico.tipo] = [];
+        }
+        grouped[tecnico.tipo].push(tecnico);
+      }
+    });
+    
+    return grouped;
   }, [filteredBySearch]);
 
   // Técnicos filtrados por tipo selecionado
@@ -149,7 +166,7 @@ export default function Tecnicos() {
         <Tabs value={selectedTipo} onValueChange={setSelectedTipo} className="space-y-6">
           <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex h-auto">
             <TabsTrigger value="Todos" className="text-sm">Todos</TabsTrigger>
-            {TIPOS_TECNICO.map((tipo) => (
+            {Object.keys(tecnicosPorTipo).map((tipo) => (
               <TabsTrigger key={tipo} value={tipo} className="text-sm">
                 {tipo}
               </TabsTrigger>
@@ -158,9 +175,9 @@ export default function Tecnicos() {
 
           {/* Conteúdo para "Todos" - mostra agrupado por tipo */}
           <TabsContent value="Todos" className="space-y-8">
-            {TIPOS_TECNICO.map((tipo) => {
+            {Object.keys(tecnicosPorTipo).map((tipo) => {
               const tecnicosDoTipo = tecnicosPorTipo[tipo];
-              if (tecnicosDoTipo.length === 0) return null;
+              if (!tecnicosDoTipo || tecnicosDoTipo.length === 0) return null;
 
               return (
                 <div key={tipo} className="space-y-4">
@@ -208,7 +225,7 @@ export default function Tecnicos() {
           </TabsContent>
 
           {/* Conteúdo para cada tipo específico - mostra em grid horizontal compacto */}
-          {TIPOS_TECNICO.map((tipo) => (
+          {Object.keys(tecnicosPorTipo).map((tipo) => (
             <TabsContent key={tipo} value={tipo}>
               <div className="mb-6">
                 <h2 className="text-2xl font-bold flex items-center gap-3">

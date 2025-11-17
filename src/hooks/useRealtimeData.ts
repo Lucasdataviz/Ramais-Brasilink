@@ -29,7 +29,12 @@ export const useRealtimeExtensions = () => {
           department: ramal.departamento,
           status: 'active' as const,
           queue_id: null,
-          metadata: {},
+          metadata: {
+            supervisor: ramal.supervisor === true,
+            coordenador: ramal.coordenador === true,
+            legenda_supervisor: ramal.legenda_supervisor || null,
+            legenda_coordenador: ramal.legenda_coordenador || null,
+          },
           created_at: ramal.created_at || new Date().toISOString(),
           updated_at: ramal.updated_at || new Date().toISOString(),
         }));

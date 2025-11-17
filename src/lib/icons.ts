@@ -2,7 +2,9 @@ import {
   Building2, Wrench, Users, Headphones, Server, 
   Network, CreditCard, Shield, FileText, MessageSquare, HelpCircle, Phone, 
   Radio, Cable, Router, HardDrive, Database, Monitor, Smartphone, Laptop, 
-  Mail, Calendar, Clock, Settings, Briefcase
+  Mail, Calendar, Clock, Settings, Briefcase, PhoneCall, PhoneIncoming, PhoneOutgoing,
+  DollarSign, Receipt, Wallet, TrendingUp, TrendingDown, Banknote, Coins,
+  Megaphone, Volume2, AlertCircle, MessageCircle, UserCheck, UserPlus
 } from 'lucide-react';
 
 // Mapeamento de ícones compartilhado entre Index e Admin
@@ -32,6 +34,29 @@ export const ICON_MAP: Record<string, any> = {
   'Relógio': Clock,
   'Configurações': Settings,
   'Negócios': Briefcase,
+  // Ícones relacionados a telefone
+  'Telefone': Phone,
+  'Chamada': PhoneCall,
+  'Entrada': PhoneIncoming,
+  'Saída': PhoneOutgoing,
+  // Ícones relacionados a financeiro
+  'Financeiro': DollarSign,
+  'Finanças': DollarSign,
+  'Contas': Receipt,
+  'Carteira': Wallet,
+  'Receita': TrendingUp,
+  'Despesa': TrendingDown,
+  'Dinheiro': Banknote,
+  'Moeda': Coins,
+  // Ícones relacionados a ouvidoria e atendimento
+  'Ouvidoria': Megaphone,
+  'Reclamação': AlertCircle,
+  'Atendimento ao Cliente': MessageCircle,
+  'Atendimento Telefônico': PhoneCall,
+  'Central de Atendimento': Headphones,
+  'Call Center': PhoneCall,
+  'Atendente': UserCheck,
+  'Operador': UserPlus,
 };
 
 export const getIconComponent = (iconName: string | undefined) => {
@@ -66,5 +91,28 @@ export const PREDEFINED_ICONS = [
   { name: 'Relógio', icon: Clock },
   { name: 'Configurações', icon: Settings },
   { name: 'Negócios', icon: Briefcase },
+  // Ícones relacionados a telefone
+  { name: 'Telefone', icon: Phone },
+  { name: 'Chamada', icon: PhoneCall },
+  { name: 'Entrada', icon: PhoneIncoming },
+  { name: 'Saída', icon: PhoneOutgoing },
+  // Ícones relacionados a financeiro
+  { name: 'Financeiro', icon: DollarSign },
+  { name: 'Finanças', icon: DollarSign },
+  { name: 'Contas', icon: Receipt },
+  { name: 'Carteira', icon: Wallet },
+  { name: 'Receita', icon: TrendingUp },
+  { name: 'Despesa', icon: TrendingDown },
+  { name: 'Dinheiro', icon: Banknote },
+  { name: 'Moeda', icon: Coins },
+  // Ícones relacionados a ouvidoria e atendimento
+  { name: 'Ouvidoria', icon: Megaphone },
+  { name: 'Reclamação', icon: AlertCircle },
+  { name: 'Atendimento ao Cliente', icon: MessageCircle },
+  { name: 'Atendimento Telefônico', icon: PhoneCall },
+  { name: 'Central de Atendimento', icon: Headphones },
+  { name: 'Call Center', icon: PhoneCall },
+  { name: 'Atendente', icon: UserCheck },
+  { name: 'Operador', icon: UserPlus },
 ];
 

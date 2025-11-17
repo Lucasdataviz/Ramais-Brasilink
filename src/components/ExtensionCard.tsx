@@ -51,6 +51,8 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
     return status;
   };
 
+  const displayNumber = formatNumber(extension.number);
+
   return (
     <Card className="p-4 hover:shadow-lg transition-all border-0 shadow-md bg-white dark:bg-gray-900">
       <div className="flex items-start justify-between mb-3">
@@ -68,14 +70,14 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
       <div className="flex items-center gap-2 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border border-blue-200/50 dark:border-blue-800/50">
         <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
         <span className="text-lg font-mono font-bold text-foreground flex-1">
-          {formatNumber(extension.number)}
+          {displayNumber}
         </span>
         <Button
           variant="ghost"
           size="sm"
           onClick={(e) => {
             e.stopPropagation();
-            copyToClipboard(extension.number);
+            copyToClipboard(displayNumber);
           }}
           className="shrink-0 h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/30"
           title="Copiar ramal"

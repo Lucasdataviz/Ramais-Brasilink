@@ -33,6 +33,10 @@ export interface Ramal {
   login: string;
   senha: string;
   status: 'ativo' | 'inativo';
+  supervisor?: boolean | null;
+  coordenador?: boolean | null;
+  legenda_supervisor?: string | null;
+  legenda_coordenador?: string | null;
   created_at?: string;
   updated_at?: string;
 }

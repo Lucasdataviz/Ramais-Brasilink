@@ -112,10 +112,10 @@ export default function Admin() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/">
-                  <Home className="h-4 w-4 mr-2" />
-                  Dashboard
+              <Button variant="default" size="sm" asChild className="bg-blue-600 hover:bg-blue-700 text-white shadow-md">
+                <Link to="/" className="flex items-center gap-2">
+                  <Home className="h-4 w-4" />
+                  Voltar ao Dashboard
                 </Link>
               </Button>
               <ThemeToggle />

@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Ramal, Departamento } from '@/lib/types';
 import { 
   getRamais, deleteRamal, updateRamal, createRamal, getDepartamentosFromRamais,
@@ -64,6 +65,10 @@ export const RamaisManager = () => {
     login: '',
     senha: '',
     status: 'ativo' as 'ativo' | 'inativo',
+    isSupervisor: false,
+    isCoordenador: false,
+    legendaSupervisor: '',
+    legendaCoordenador: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -125,6 +130,10 @@ export const RamaisManager = () => {
       login: '',
       senha: '',
       status: 'ativo',
+      isSupervisor: false,
+      isCoordenador: false,
+      legendaSupervisor: '',
+      legendaCoordenador: '',
     });
     setCreateDialogOpen(true);
   };
@@ -137,7 +146,13 @@ export const RamaisManager = () => {
 
     try {
       setSaving(true);
-      const novoRamal = await createRamal(createForm);
+      const novoRamal = await createRamal({
+        ...createForm,
+        supervisor: createForm.isSupervisor || false,
+        coordenador: createForm.isCoordenador || false,
+        legenda_supervisor: createForm.isSupervisor ? createForm.legendaSupervisor || null : null,
+        legenda_coordenador: createForm.isCoordenador ? createForm.legendaCoordenador || null : null,
+      });
       // Criar notificação
       try {
         await criarNotificacaoRamalCriado(novoRamal);
@@ -182,6 +197,10 @@ export const RamaisManager = () => {
         login: editForm.login,
         senha: editForm.senha,
         status: editForm.status,
+        supervisor: editForm.supervisor || false,
+        coordenador: editForm.coordenador || false,
+        legenda_supervisor: editForm.supervisor ? editForm.legenda_supervisor || null : null,
+        legenda_coordenador: editForm.coordenador ? editForm.legenda_coordenador || null : null,
       });
       
       // Criar notificação se houver mudanças relevantes
@@ -416,6 +435,56 @@ export const RamaisManager = () => {
               </div>
             </div>
 
+            {/* Checkboxes para Supervisor e Coordenador */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="create-supervisor"
+                  checked={createForm.isSupervisor}
+                  onCheckedChange={(checked) => setCreateForm({ ...createForm, isSupervisor: checked === true })}
+                />
+                <Label htmlFor="create-supervisor" className="text-sm font-normal cursor-pointer">
+                  Supervisor
+                </Label>
+              </div>
+              {createForm.isSupervisor && (
+                <div className="ml-6 space-y-2">
+                  <Label htmlFor="create-legenda-supervisor" className="text-sm">
+                    Legenda do Supervisor (ex: Supervisor do Comercial)
+                  </Label>
+                  <Input
+                    id="create-legenda-supervisor"
+                    value={createForm.legendaSupervisor}
+                    onChange={(e) => setCreateForm({ ...createForm, legendaSupervisor: e.target.value })}
+                    placeholder="Ex: Supervisor do Comercial"
+                  />
+                </div>
+              )}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="create-coordenador"
+                  checked={createForm.isCoordenador}
+                  onCheckedChange={(checked) => setCreateForm({ ...createForm, isCoordenador: checked === true })}
+                />
+                <Label htmlFor="create-coordenador" className="text-sm font-normal cursor-pointer">
+                  Coordenador
+                </Label>
+              </div>
+              {createForm.isCoordenador && (
+                <div className="ml-6 space-y-2">
+                  <Label htmlFor="create-legenda-coordenador" className="text-sm">
+                    Legenda do Coordenador (ex: Coordenador do SAC)
+                  </Label>
+                  <Input
+                    id="create-legenda-coordenador"
+                    value={createForm.legendaCoordenador}
+                    onChange={(e) => setCreateForm({ ...createForm, legendaCoordenador: e.target.value })}
+                    placeholder="Ex: Coordenador do SAC"
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="create-servidor">Servidor SIP</Label>
               <Input
@@ -550,6 +619,56 @@ export const RamaisManager = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Checkboxes para Supervisor e Coordenador */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="edit-supervisor"
+                    checked={editForm.supervisor === true}
+                    onCheckedChange={(checked) => setEditForm({ ...editForm, supervisor: checked === true })}
+                  />
+                  <Label htmlFor="edit-supervisor" className="text-sm font-normal cursor-pointer">
+                    Supervisor
+                  </Label>
+                </div>
+                {editForm.supervisor && (
+                  <div className="ml-6 space-y-2">
+                    <Label htmlFor="edit-legenda-supervisor" className="text-sm">
+                      Legenda do Supervisor (ex: Supervisor do Comercial)
+                    </Label>
+                    <Input
+                      id="edit-legenda-supervisor"
+                      value={editForm.legenda_supervisor || ''}
+                      onChange={(e) => setEditForm({ ...editForm, legenda_supervisor: e.target.value })}
+                      placeholder="Ex: Supervisor do Comercial"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="edit-coordenador"
+                    checked={editForm.coordenador === true}
+                    onCheckedChange={(checked) => setEditForm({ ...editForm, coordenador: checked === true })}
+                  />
+                  <Label htmlFor="edit-coordenador" className="text-sm font-normal cursor-pointer">
+                    Coordenador
+                  </Label>
+                </div>
+                {editForm.coordenador && (
+                  <div className="ml-6 space-y-2">
+                    <Label htmlFor="edit-legenda-coordenador" className="text-sm">
+                      Legenda do Coordenador (ex: Coordenador do SAC)
+                    </Label>
+                    <Input
+                      id="edit-legenda-coordenador"
+                      value={editForm.legenda_coordenador || ''}
+                      onChange={(e) => setEditForm({ ...editForm, legenda_coordenador: e.target.value })}
+                      placeholder="Ex: Coordenador do SAC"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

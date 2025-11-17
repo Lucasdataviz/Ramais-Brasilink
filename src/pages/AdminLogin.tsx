@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { loginAdmin } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Phone, Shield, ArrowRight, Mail, Lock, Settings, Database, Network } from 'lucide-react';
+import { Eye, EyeOff, Phone, Shield, ArrowRight, Mail, Lock, Settings, Database, Network, Home } from 'lucide-react';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -290,14 +290,26 @@ export default function AdminLogin() {
               </Button>
             </form>
 
-            {/* Link de acesso */}
-            <div className="mt-6 text-center">
-              <Link 
-                to="/" 
-                className="text-sm text-gray-400 hover:text-blue-400 transition-colors"
+            {/* Link de acesso e botão voltar */}
+            <div className="mt-6 space-y-3">
+              <Button
+                variant="outline"
+                className="w-full border-slate-700 text-gray-300 hover:bg-slate-700/50 hover:text-white"
+                asChild
               >
-                Não tem uma conta? <span className="text-blue-400 font-medium">Acessar dashboard público</span>
-              </Link>
+                <Link to="/">
+                  <Home className="w-4 h-4 mr-2" />
+                  Voltar ao Dashboard
+                </Link>
+              </Button>
+              <div className="text-center">
+                <Link 
+                  to="/" 
+                  className="text-sm text-gray-400 hover:text-blue-400 transition-colors"
+                >
+                  Não tem uma conta? <span className="text-blue-400 font-medium">Acessar dashboard público</span>
+                </Link>
+              </div>
             </div>
           </div>
 
