@@ -27,6 +27,7 @@ export interface Ramal {
   nome: string;
   ramal: string;
   departamento: string;
+  descricao?: string | null; // Descrição opcional (se não preenchida, usa o departamento)
   servidor_sip: string;
   usuario: string;
   dominio: string;

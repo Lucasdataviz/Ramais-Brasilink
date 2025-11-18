@@ -59,6 +59,7 @@ export const RamaisManager = () => {
     nome: '',
     ramal: '',
     departamento: '',
+    descricao: '',
     servidor_sip: '',
     usuario: '',
     dominio: '',
@@ -124,6 +125,7 @@ export const RamaisManager = () => {
       nome: '',
       ramal: '',
       departamento: departamentos.length > 0 ? departamentos[0].nome : '',
+      descricao: '',
       servidor_sip: '',
       usuario: '',
       dominio: '',
@@ -155,6 +157,7 @@ export const RamaisManager = () => {
       const novoRamal = await createRamal({
         ...createForm,
         departamento: (createForm.isSupervisor || createForm.isCoordenador) ? '' : createForm.departamento,
+        descricao: createForm.descricao.trim() || null,
         supervisor: createForm.isSupervisor || false,
         coordenador: createForm.isCoordenador || false,
         legenda_supervisor: createForm.isSupervisor ? createForm.legendaSupervisor || null : null,
@@ -198,6 +201,7 @@ export const RamaisManager = () => {
         nome: editForm.nome,
         ramal: editForm.ramal,
         departamento: (editForm.supervisor || editForm.coordenador) ? '' : editForm.departamento,
+        descricao: editForm.descricao?.trim() || null,
         servidor_sip: editForm.servidor_sip,
         usuario: editForm.usuario,
         dominio: editForm.dominio,
@@ -448,6 +452,19 @@ export const RamaisManager = () => {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="create-descricao">Descrição (Opcional)</Label>
+              <Input
+                id="create-descricao"
+                value={createForm.descricao}
+                onChange={(e) => setCreateForm({ ...createForm, descricao: e.target.value })}
+                placeholder="Ex: Atendimento ao Cliente - Se não preenchido, usa o departamento"
+              />
+              <p className="text-xs text-muted-foreground">
+                Se deixar em branco, será usado o nome do departamento como descrição
+              </p>
+            </div>
+
             {/* Checkboxes para Supervisor e Coordenador */}
             <div className="space-y-4 pt-2">
               <div className="flex items-center space-x-2">
@@ -652,6 +669,19 @@ export const RamaisManager = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-descricao">Descrição (Opcional)</Label>
+                <Input
+                  id="edit-descricao"
+                  value={editForm.descricao || ''}
+                  onChange={(e) => setEditForm({ ...editForm, descricao: e.target.value })}
+                  placeholder="Ex: Atendimento ao Cliente - Se não preenchido, usa o departamento"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Se deixar em branco, será usado o nome do departamento como descrição
+                </p>
               </div>
 
               {/* Checkboxes para Supervisor e Coordenador */}

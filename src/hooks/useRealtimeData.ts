@@ -34,6 +34,7 @@ export const useRealtimeExtensions = () => {
             coordenador: ramal.coordenador === true,
             legenda_supervisor: ramal.legenda_supervisor || null,
             legenda_coordenador: ramal.legenda_coordenador || null,
+            descricao: ramal.descricao || null, // Descrição opcional
           },
           created_at: ramal.created_at || new Date().toISOString(),
           updated_at: ramal.updated_at || new Date().toISOString(),

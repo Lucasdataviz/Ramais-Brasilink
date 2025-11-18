@@ -108,9 +108,9 @@ export const SupervisorCoordenadorCard = ({
               {legenda}
             </p>
           )}
-          {!legenda && extension.department && (
+          {!legenda && (
             <p className="text-xs text-muted-foreground mt-1 truncate">
-              {extension.department}
+              {extension.metadata?.descricao || extension.department || 'Sem descrição'}
             </p>
           )}
         </div>

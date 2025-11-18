@@ -110,7 +110,9 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
           <h3 className="text-base font-bold text-foreground truncate">
             {extension.name}
           </h3>
-          <p className="text-sm text-muted-foreground mt-1 truncate">{extension.department}</p>
+          <p className="text-sm text-muted-foreground mt-1 truncate">
+            {extension.metadata?.descricao || extension.department || 'Sem descrição'}
+          </p>
         </div>
         <Badge className={`${getStatusColor(extension.status)} ml-2 shrink-0 text-xs font-semibold`}>
           {getStatusLabel(extension.status)}

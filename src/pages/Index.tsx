@@ -174,7 +174,7 @@ const Index = () => {
       {/* Header Premium */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800 shadow-sm">
   <div className="w-full px-6 py-4">
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       
       {/* Logo e Nome - Flutuando */}
       <div className="flex items-center gap-4 bg-white dark:bg-gray-800 px-5 py-3 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
@@ -271,15 +271,17 @@ const Index = () => {
       </div>
     </div>
 
-    {/* Barra de Busca */}
-    <div className="relative max-w-md">
-      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
-      <Input
-        placeholder="Buscar por nome, ramal ou departamento..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="pl-12 py-3 text-base border-2 shadow-sm rounded-xl focus:ring-2 focus:ring-blue-500/20"
-      />
+    {/* Barra de Busca - Centralizada */}
+    <div className="flex justify-center mt-4">
+      <div className="relative w-full max-w-2xl">
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
+        <Input
+          placeholder="Buscar por nome, ramal ou departamento..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-12 py-3 text-base border-2 shadow-sm rounded-xl focus:ring-2 focus:ring-blue-500/20 w-full"
+        />
+      </div>
     </div>
   </div>
 </header>
