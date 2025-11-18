@@ -42,7 +42,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const TIPOS_TECNICO_PREDEFINIDOS: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura', 'Araquém', 'Tecno'];
+const TIPOS_TECNICO_PREDEFINIDOS: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura', 'Araquém', 'Tecno', 'Cocal-PI'];
 
 export const TecnicosManager = () => {
   const [tecnicos, setTecnicos] = useState<NumeroTecnico[]>([]);
@@ -131,7 +131,14 @@ export const TecnicosManager = () => {
       loadTecnicos();
     } catch (error: any) {
       console.error('Error creating tecnico:', error);
-      toast.error(error.message || 'Erro ao criar técnico');
+      let errorMessage = error.message || 'Erro ao criar técnico';
+      
+      // Verificar se é erro de constraint (cidade não permitida)
+      if (error.message?.includes('check constraint') || error.message?.includes('violates check constraint')) {
+        errorMessage = `A cidade "${formData.tipo}" não está permitida no banco de dados. Execute o script SQL para adicionar esta cidade: scripts/fixes/sql_add_cocal_pi_tecnicos.sql`;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -165,7 +172,14 @@ export const TecnicosManager = () => {
       loadTecnicos();
     } catch (error: any) {
       console.error('Error updating tecnico:', error);
-      toast.error(error.message || 'Erro ao atualizar técnico');
+      let errorMessage = error.message || 'Erro ao atualizar técnico';
+      
+      // Verificar se é erro de constraint (cidade não permitida)
+      if (error.message?.includes('check constraint') || error.message?.includes('violates check constraint')) {
+        errorMessage = `A cidade "${formData.tipo}" não está permitida no banco de dados. Execute o script SQL para adicionar esta cidade: scripts/fixes/sql_add_cocal_pi_tecnicos.sql`;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -195,6 +209,7 @@ export const TecnicosManager = () => {
       'Infraestrutura': 'bg-red-500',
       'Araquém': 'bg-cyan-500',
       'Tecno': 'bg-indigo-500',
+      'Cocal-PI': 'bg-pink-500',
     };
     return colors[tipo] || 'bg-gray-500';
   };

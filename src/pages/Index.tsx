@@ -5,8 +5,11 @@ import { SupervisorCoordenadorCard } from '@/components/SupervisorCoordenadorCar
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { 
-  Search, Lock, ExternalLink, Building2, Wrench, User, ChevronDown, ChevronUp, X, Users, UserCheck
+  Search, Lock, ExternalLink, Building2, Wrench, User, ChevronDown, ChevronUp, X, Users, UserCheck, Settings
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -32,6 +35,9 @@ const Index = () => {
   const [departamentosLoading, setDepartamentosLoading] = useState(true);
   const [expandedDepartment, setExpandedDepartment] = useState<string | null>(null);
   const [expandedSupervisores, setExpandedSupervisores] = useState(false);
+  const [useShortNumber, setUseShortNumber] = useState(() => {
+    return localStorage.getItem('useShortNumberForCalls') === 'true';
+  });
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -97,21 +103,26 @@ const Index = () => {
     })).filter(pai => pai.filhos.length > 0); // Apenas pais que têm filhos
   }, [departamentos]);
 
-  // Agrupar extensões por departamento
+  // Agrupar extensões por departamento (apenas departamentos ativos)
   const groupedByDepartment = useMemo(() => {
     const departments = new Set(extensions.map(ext => ext.department).filter(Boolean));
-    return Array.from(departments).map((dept) => {
-      const deptInfo = departamentos.find(d => d.id === dept || d.nome === dept);
-      return {
-        department: dept,
-        departmentInfo: deptInfo,
-        extensions: filteredExtensions.filter((ext) => ext.department === dept),
-      };
-    }).sort((a, b) => {
-      const ordemA = a.departmentInfo?.ordem || 999;
-      const ordemB = b.departmentInfo?.ordem || 999;
-      return ordemA - ordemB;
-    });
+    return Array.from(departments)
+      .map((dept) => {
+        const deptInfo = departamentos.find(d => (d.id === dept || d.nome === dept) && d.ativo);
+        // Só incluir se o departamento existir e estiver ativo
+        if (!deptInfo) return null;
+        return {
+          department: dept,
+          departmentInfo: deptInfo,
+          extensions: filteredExtensions.filter((ext) => ext.department === dept),
+        };
+      })
+      .filter((dept) => dept !== null) // Remover departamentos inativos ou não encontrados
+      .sort((a, b) => {
+        const ordemA = a?.departmentInfo?.ordem || 999;
+        const ordemB = b?.departmentInfo?.ordem || 999;
+        return ordemA - ordemB;
+      }) as Array<{ department: string; departmentInfo: Departamento; extensions: typeof filteredExtensions }>;
   }, [filteredExtensions, extensions, departamentos]);
 
   const getGradient = (dept: Departamento | undefined) => {
@@ -210,6 +221,47 @@ const Index = () => {
         </Button>
         
         <ThemeToggle />
+        
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9" title="Configurações de ligação">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80" align="end">
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">Configurações de Ligação</h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Configure como as ligações são feitas ao clicar no botão de telefone.
+                </p>
+              </div>
+              <div className="flex items-center justify-between space-x-2">
+                <div className="space-y-0.5">
+                  <Label htmlFor="short-number" className="text-sm font-normal">
+                    Usar apenas 4 dígitos nas ligações
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Liga usando apenas os últimos 4 dígitos do ramal
+                  </p>
+                </div>
+                <Switch
+                  id="short-number"
+                  checked={useShortNumber}
+                  onCheckedChange={(checked) => {
+                    setUseShortNumber(checked);
+                    localStorage.setItem('useShortNumberForCalls', checked.toString());
+                  }}
+                />
+              </div>
+              <div className="pt-2 border-t">
+                <p className="text-xs text-muted-foreground">
+                  <strong>Nota:</strong> As ligações abrem o MicroSIP. Para ligar direto do navegador sem abrir o MicroSIP, seria necessário configurar WebRTC, o que requer servidor SIP WebRTC adicional.
+                </p>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
         
         <Button variant="ghost" size="icon" asChild className="h-9 w-9">
           <Link to="/admin/login" title="Admin">

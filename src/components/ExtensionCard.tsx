@@ -2,7 +2,7 @@ import { Extension } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, Copy } from 'lucide-react';
+import { Phone, Copy, PhoneCall } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ExtensionCardProps {
@@ -52,6 +52,56 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
   };
 
   const displayNumber = formatNumber(extension.number);
+  const fullNumber = extension.number; // Número completo para ligação
+
+  // Obter preferência de usar apenas 4 dígitos
+  const useShortNumber = () => {
+    const preference = localStorage.getItem('useShortNumberForCalls');
+    return preference === 'true' || (showShortNumber && preference !== 'false');
+  };
+
+  // Função para fazer ligação via SIP
+  const handleCall = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Verificar se o ramal está ativo
+    const normalizedStatus = extension.status.toLowerCase();
+    if (normalizedStatus !== 'active' && normalizedStatus !== 'ativo') {
+      toast.error('Não é possível ligar para um ramal inativo');
+      return;
+    }
+
+    // Usar número curto (4 dígitos) se a preferência estiver ativa
+    const numberToCall = useShortNumber() && extension.number.length > 4 
+      ? extension.number.slice(-4) 
+      : extension.number;
+
+    try {
+      // Tentar usar protocolo SIP primeiro (para softphones como MicroSIP)
+      // Formato: sip:numero@servidor ou sip:numero
+      const sipUrl = `sip:${numberToCall}`;
+      
+      // Criar um link temporário e clicar nele
+      const link = document.createElement('a');
+      link.href = sipUrl;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`Iniciando ligação para ${numberToCall}...`);
+    } catch (error) {
+      // Fallback: tentar protocolo tel: (para dispositivos móveis)
+      try {
+        const telUrl = `tel:${numberToCall}`;
+        window.location.href = telUrl;
+        toast.success(`Iniciando ligação para ${numberToCall}...`);
+      } catch (telError) {
+        toast.error('Erro ao iniciar ligação. Verifique se há um softphone instalado.');
+        console.error('Error making call:', telError);
+      }
+    }
+  };
 
   return (
     <Card className="p-4 hover:shadow-lg transition-all border-0 shadow-md bg-white dark:bg-gray-900">
@@ -72,6 +122,16 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
         <span className="text-lg font-mono font-bold text-foreground flex-1">
           {displayNumber}
         </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleCall}
+          disabled={extension.status.toLowerCase() !== 'active' && extension.status.toLowerCase() !== 'ativo'}
+          className="shrink-0 h-8 w-8 p-0 hover:bg-green-100 dark:hover:bg-green-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Ligar para este ramal"
+        >
+          <PhoneCall className="h-4 w-4 text-green-600 dark:text-green-400" />
+        </Button>
         <Button
           variant="ghost"
           size="sm"

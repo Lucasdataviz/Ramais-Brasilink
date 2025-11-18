@@ -11,7 +11,7 @@ import { getNumeroTecnicos } from '@/lib/supabase';
 import { NumeroTecnico, TipoTecnico } from '@/lib/types';
 import { toast } from 'sonner';
 
-const TIPOS_TECNICO: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura', 'Araquém', 'Tecno']
+const TIPOS_TECNICO: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura', 'Araquém', 'Tecno', 'Cocal-PI']
 
 export default function Tecnicos() {
   const [tecnicos, setTecnicos] = useState<NumeroTecnico[]>([]);
@@ -45,6 +45,7 @@ export default function Tecnicos() {
       'Infraestrutura': 'bg-red-500',
       'Araquém': 'bg-cyan-500',
       'Tecno': 'bg-indigo-500',
+      'Cocal-PI': 'bg-pink-500',
     };
     return colors[tipo] || 'bg-gray-500';
   };

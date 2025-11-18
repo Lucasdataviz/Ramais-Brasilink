@@ -549,6 +549,20 @@ export const getNotificacoesAtivas = async (): Promise<Notificacao[]> => {
   return data || [];
 };
 
+export const getAllNotificacoes = async (limit: number = 100): Promise<Notificacao[]> => {
+  const { data, error } = await supabase
+    .from('notificacoes')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  
+  if (error) {
+    console.error('Error fetching all notificacoes:', error);
+    return [];
+  }
+  return data || [];
+};
+
 export const marcarNotificacaoComoInativa = async (id: string) => {
   const { error } = await supabase
     .from('notificacoes')

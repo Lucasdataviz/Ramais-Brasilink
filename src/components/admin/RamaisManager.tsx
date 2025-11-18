@@ -144,10 +144,17 @@ export const RamaisManager = () => {
       return;
     }
 
+    // Se for supervisor ou coordenador, não precisa de departamento
+    if (!createForm.isSupervisor && !createForm.isCoordenador && !createForm.departamento.trim()) {
+      toast.error('Departamento é obrigatório para ramais normais');
+      return;
+    }
+
     try {
       setSaving(true);
       const novoRamal = await createRamal({
         ...createForm,
+        departamento: (createForm.isSupervisor || createForm.isCoordenador) ? '' : createForm.departamento,
         supervisor: createForm.isSupervisor || false,
         coordenador: createForm.isCoordenador || false,
         legenda_supervisor: createForm.isSupervisor ? createForm.legendaSupervisor || null : null,
@@ -190,7 +197,7 @@ export const RamaisManager = () => {
       await updateRamal(editForm.id, {
         nome: editForm.nome,
         ramal: editForm.ramal,
-        departamento: editForm.departamento,
+        departamento: (editForm.supervisor || editForm.coordenador) ? '' : editForm.departamento,
         servidor_sip: editForm.servidor_sip,
         usuario: editForm.usuario,
         dominio: editForm.dominio,
@@ -395,13 +402,14 @@ export const RamaisManager = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="create-departamento">Departamento *</Label>
+                <Label htmlFor="create-departamento">Departamento {!createForm.isSupervisor && !createForm.isCoordenador && '*'}</Label>
                 <Select
                   value={createForm.departamento}
                   onValueChange={(value) => setCreateForm({ ...createForm, departamento: value })}
+                  disabled={createForm.isSupervisor || createForm.isCoordenador}
                 >
-                  <SelectTrigger id="create-departamento">
-                    <SelectValue placeholder="Selecione..." />
+                  <SelectTrigger id="create-departamento" disabled={createForm.isSupervisor || createForm.isCoordenador}>
+                    <SelectValue placeholder={createForm.isSupervisor || createForm.isCoordenador ? "Não necessário para supervisor/coordenador" : "Selecione..."} />
                   </SelectTrigger>
                   <SelectContent>
                     {departamentos.filter(d => d.ativo).map((dept) => (
@@ -417,6 +425,11 @@ export const RamaisManager = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                {(createForm.isSupervisor || createForm.isCoordenador) && (
+                  <p className="text-xs text-muted-foreground">
+                    Supervisores e coordenadores não precisam de departamento
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="create-status">Status</Label>
@@ -441,7 +454,14 @@ export const RamaisManager = () => {
                 <Checkbox
                   id="create-supervisor"
                   checked={createForm.isSupervisor}
-                  onCheckedChange={(checked) => setCreateForm({ ...createForm, isSupervisor: checked === true })}
+                  onCheckedChange={(checked) => {
+                    const isSupervisor = checked === true;
+                    setCreateForm({ 
+                      ...createForm, 
+                      isSupervisor,
+                      departamento: (isSupervisor || createForm.isCoordenador) ? '' : createForm.departamento
+                    });
+                  }}
                 />
                 <Label htmlFor="create-supervisor" className="text-sm font-normal cursor-pointer">
                   Supervisor
@@ -464,7 +484,14 @@ export const RamaisManager = () => {
                 <Checkbox
                   id="create-coordenador"
                   checked={createForm.isCoordenador}
-                  onCheckedChange={(checked) => setCreateForm({ ...createForm, isCoordenador: checked === true })}
+                  onCheckedChange={(checked) => {
+                    const isCoordenador = checked === true;
+                    setCreateForm({ 
+                      ...createForm, 
+                      isCoordenador,
+                      departamento: (isCoordenador || createForm.isSupervisor) ? '' : createForm.departamento
+                    });
+                  }}
                 />
                 <Label htmlFor="create-coordenador" className="text-sm font-normal cursor-pointer">
                   Coordenador
@@ -583,9 +610,10 @@ export const RamaisManager = () => {
                   <Select
                     value={editForm.departamento}
                     onValueChange={(value) => setEditForm({ ...editForm, departamento: value })}
+                    disabled={editForm.supervisor || editForm.coordenador}
                   >
-                    <SelectTrigger id="edit-departamento">
-                      <SelectValue />
+                    <SelectTrigger id="edit-departamento" disabled={editForm.supervisor || editForm.coordenador}>
+                      <SelectValue placeholder={editForm.supervisor || editForm.coordenador ? "Não necessário para supervisor/coordenador" : ""} />
                     </SelectTrigger>
                     <SelectContent>
                       {departamentos.filter(d => d.ativo).map((dept) => (
@@ -601,6 +629,11 @@ export const RamaisManager = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {(editForm.supervisor || editForm.coordenador) && (
+                    <p className="text-xs text-muted-foreground">
+                      Supervisores e coordenadores não precisam de departamento
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-status">Status</Label>
@@ -627,7 +660,14 @@ export const RamaisManager = () => {
                   <Checkbox
                     id="edit-supervisor"
                     checked={editForm.supervisor === true}
-                    onCheckedChange={(checked) => setEditForm({ ...editForm, supervisor: checked === true })}
+                    onCheckedChange={(checked) => {
+                      const isSupervisor = checked === true;
+                      setEditForm({ 
+                        ...editForm, 
+                        supervisor: isSupervisor,
+                        departamento: (isSupervisor || editForm.coordenador) ? '' : editForm.departamento
+                      });
+                    }}
                   />
                   <Label htmlFor="edit-supervisor" className="text-sm font-normal cursor-pointer">
                     Supervisor
@@ -650,7 +690,14 @@ export const RamaisManager = () => {
                   <Checkbox
                     id="edit-coordenador"
                     checked={editForm.coordenador === true}
-                    onCheckedChange={(checked) => setEditForm({ ...editForm, coordenador: checked === true })}
+                    onCheckedChange={(checked) => {
+                      const isCoordenador = checked === true;
+                      setEditForm({ 
+                        ...editForm, 
+                        coordenador: isCoordenador,
+                        departamento: (isCoordenador || editForm.supervisor) ? '' : editForm.departamento
+                      });
+                    }}
                   />
                   <Label htmlFor="edit-coordenador" className="text-sm font-normal cursor-pointer">
                     Coordenador

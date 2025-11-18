@@ -345,7 +345,11 @@ export const DepartamentosManager = () => {
     return ramais.filter(r => r.departamento === departamento.nome || r.departamento === departamento.id);
   };
 
+  // Ramais filtrados para vincular ao departamento (excluindo supervisores e coordenadores)
   const filteredRamais = ramais.filter(ramal => {
+    // Excluir supervisores e coordenadores
+    if (ramal.supervisor || ramal.coordenador) return false;
+    
     if (!ramaisSearch) return true;
     const search = ramaisSearch.toLowerCase();
     return (
@@ -354,6 +358,12 @@ export const DepartamentosManager = () => {
       ramal.departamento?.toLowerCase().includes(search)
     );
   });
+
+  // Ramais que são supervisores (para seleção de supervisor)
+  const ramaisSupervisores = ramais.filter(ramal => ramal.supervisor === true);
+
+  // Ramais que são coordenadores (para seleção de coordenador)
+  const ramaisCoordenadores = ramais.filter(ramal => ramal.coordenador === true);
 
   if (loading) {
     return (
@@ -546,9 +556,9 @@ export const DepartamentosManager = () => {
                     <Command>
                       <CommandInput placeholder="Buscar por nome ou ramal..." />
                       <CommandList>
-                        <CommandEmpty>Nenhum ramal encontrado.</CommandEmpty>
+                        <CommandEmpty>Nenhum supervisor encontrado.</CommandEmpty>
                         <CommandGroup>
-                          {ramais.map((ramal) => (
+                          {ramaisSupervisores.map((ramal) => (
                             <CommandItem
                               key={ramal.id}
                               value={`${ramal.nome} - ${ramal.ramal}`}
@@ -598,9 +608,9 @@ export const DepartamentosManager = () => {
                     <Command>
                       <CommandInput placeholder="Buscar por nome ou ramal..." />
                       <CommandList>
-                        <CommandEmpty>Nenhum ramal encontrado.</CommandEmpty>
+                        <CommandEmpty>Nenhum coordenador encontrado.</CommandEmpty>
                         <CommandGroup>
-                          {ramais.map((ramal) => (
+                          {ramaisCoordenadores.map((ramal) => (
                             <CommandItem
                               key={ramal.id}
                               value={`${ramal.nome} - ${ramal.ramal}`}
@@ -686,34 +696,44 @@ export const DepartamentosManager = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="create-cor">Cor</Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={formData.cor}
-                    onValueChange={(value) => setFormData({ ...formData, cor: value })}
-                  >
-                    <SelectTrigger id="create-cor">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PREDEFINED_COLORS.map((color) => (
-                        <SelectItem key={color} value={color}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-4 h-4 rounded-full"
-                              style={{ backgroundColor: color }}
-                            ></div>
-                            <span>{color}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="flex gap-2 items-center">
                   <Input
                     type="color"
+                    id="create-cor"
                     value={formData.cor}
                     onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
-                    className="w-20 h-10"
+                    className="w-16 h-12 cursor-pointer"
+                    title="Clique para escolher uma cor"
                   />
+                  <Input
+                    type="text"
+                    value={formData.cor}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Validar formato hex
+                      if (/^#[0-9A-Fa-f]{0,6}$/.test(value) || value === '') {
+                        setFormData({ ...formData, cor: value || '#3b82f6' });
+                      }
+                    }}
+                    placeholder="#3b82f6"
+                    className="flex-1 font-mono"
+                    maxLength={7}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <p className="text-xs text-muted-foreground w-full">Cores rápidas:</p>
+                  {PREDEFINED_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, cor: color })}
+                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                        formData.cor === color ? 'border-gray-900 dark:border-gray-100 ring-2 ring-offset-2' : 'border-gray-300 dark:border-gray-700'
+                      }`}
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -819,9 +839,9 @@ export const DepartamentosManager = () => {
                     <Command>
                       <CommandInput placeholder="Buscar por nome ou ramal..." />
                       <CommandList>
-                        <CommandEmpty>Nenhum ramal encontrado.</CommandEmpty>
+                        <CommandEmpty>Nenhum supervisor encontrado.</CommandEmpty>
                         <CommandGroup>
-                          {ramais.map((ramal) => (
+                          {ramaisSupervisores.map((ramal) => (
                             <CommandItem
                               key={ramal.id}
                               value={`${ramal.nome} - ${ramal.ramal}`}
@@ -871,9 +891,9 @@ export const DepartamentosManager = () => {
                     <Command>
                       <CommandInput placeholder="Buscar por nome ou ramal..." />
                       <CommandList>
-                        <CommandEmpty>Nenhum ramal encontrado.</CommandEmpty>
+                        <CommandEmpty>Nenhum coordenador encontrado.</CommandEmpty>
                         <CommandGroup>
-                          {ramais.map((ramal) => (
+                          {ramaisCoordenadores.map((ramal) => (
                             <CommandItem
                               key={ramal.id}
                               value={`${ramal.nome} - ${ramal.ramal}`}
@@ -959,34 +979,44 @@ export const DepartamentosManager = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-cor">Cor</Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={formData.cor}
-                    onValueChange={(value) => setFormData({ ...formData, cor: value })}
-                  >
-                    <SelectTrigger id="edit-cor">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PREDEFINED_COLORS.map((color) => (
-                        <SelectItem key={color} value={color}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-4 h-4 rounded-full"
-                              style={{ backgroundColor: color }}
-                            ></div>
-                            <span>{color}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="flex gap-2 items-center">
                   <Input
                     type="color"
+                    id="edit-cor"
                     value={formData.cor}
                     onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
-                    className="w-20 h-10"
+                    className="w-16 h-12 cursor-pointer"
+                    title="Clique para escolher uma cor"
                   />
+                  <Input
+                    type="text"
+                    value={formData.cor}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Validar formato hex
+                      if (/^#[0-9A-Fa-f]{0,6}$/.test(value) || value === '') {
+                        setFormData({ ...formData, cor: value || '#3b82f6' });
+                      }
+                    }}
+                    placeholder="#3b82f6"
+                    className="flex-1 font-mono"
+                    maxLength={7}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <p className="text-xs text-muted-foreground w-full">Cores rápidas:</p>
+                  {PREDEFINED_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, cor: color })}
+                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                        formData.cor === color ? 'border-gray-900 dark:border-gray-100 ring-2 ring-offset-2' : 'border-gray-300 dark:border-gray-700'
+                      }`}
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
