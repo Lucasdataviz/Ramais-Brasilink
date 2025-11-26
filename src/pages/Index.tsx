@@ -210,13 +210,13 @@ const Index = () => {
         
         <Button variant="outline" size="sm" asChild className="shadow-sm">
           <a 
-            href="https://agente.npx.app.br/" 
+            href="http://10.29.29.136/fop2" 
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2"
           >
             <ExternalLink className="h-4 w-4" />
-            Beatrix
+            Painel do Operador
           </a>
         </Button>
         
