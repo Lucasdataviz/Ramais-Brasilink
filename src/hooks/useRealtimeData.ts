@@ -18,7 +18,7 @@ export const useRealtimeExtensions = () => {
     try {
       setLoading(true);
       const ramais = await getRamais();
-      
+
       // Converter formato Ramal para Extension (apenas ativos)
       const extensionsData: Extension[] = ramais
         .filter(ramal => ramal.status === 'ativo')
@@ -39,8 +39,8 @@ export const useRealtimeExtensions = () => {
           created_at: ramal.created_at || new Date().toISOString(),
           updated_at: ramal.updated_at || new Date().toISOString(),
         }));
-      
-      setExtensions(extensionsData);
+
+      setExtensions([...extensionsData]);
     } catch (error) {
       console.error('Error loading extensions:', error);
     } finally {
