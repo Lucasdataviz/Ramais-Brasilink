@@ -15,12 +15,17 @@ export const NewsTicker = () => {
   const loadNotificacoes = async () => {
     try {
       const data = await getNotificacoesAtivas();
-      // Pegar apenas a notificação mais recente (última)
-      if (data.length > 0) {
-        setNotificacoes([data[0]]); // Apenas a primeira (mais recente)
-      } else {
-        setNotificacoes([]);
-      }
+
+      // Filtrar apenas notificações das últimas 24 horas
+      const h24 = 24 * 60 * 60 * 1000;
+      const now = new Date().getTime();
+
+      const recent = data.filter(n => {
+        const created = new Date(n.created_at).getTime();
+        return (now - created) < h24;
+      });
+
+      setNotificacoes(recent);
     } catch (error) {
       console.error('Error loading notificacoes:', error);
     }
@@ -28,17 +33,8 @@ export const NewsTicker = () => {
 
   if (notificacoes.length === 0) return null;
 
-  // Usar apenas a mensagem da notificação mais recente
-  const mensagemUnica = notificacoes[0].mensagem;
-  // Criar loop infinito: duplicar a mensagem para criar transição perfeita
-  // Usar um espaçamento muito grande (equivalente a ~200 caracteres) para garantir que apenas uma mensagem apareça por vez
-  // Quando a primeira mensagem sair completamente pela esquerda, a segunda já estará começando a entrar pela direita
-  const espacoSeparador = '                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ';
-  // Duplicar para criar loop contínuo - apenas uma mensagem visível por vez
-  const mensagemDuplicada = `${mensagemUnica}${espacoSeparador}${mensagemUnica}`;
-
   const getTipoColor = () => {
-    // Usar cor baseada na primeira notificação ou padrão
+    // Usar cor baseada na primeira notificação (mais recente)
     const primeiroTipo = notificacoes[0]?.tipo || 'ramal_atualizado';
     switch (primeiroTipo) {
       case 'ramal_criado':
@@ -58,31 +54,49 @@ export const NewsTicker = () => {
     }
   };
 
+  // Se houver apenas 1 notificação, exibe estático
+  if (notificacoes.length === 1) {
+    return (
+      <div className={`bg-gradient-to-r ${getTipoColor()} text-white shadow-lg border-b-2 border-white/20`}>
+        <div className="w-full flex items-center justify-center py-2 px-4">
+          {/* Static centered message */}
+          <span className="font-bold text-sm md:text-base text-center">
+            {notificacoes[0].mensagem}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Se houver mais de 1, prepara o ticker
+  const mensagens = notificacoes.map(n => n.mensagem).join(" • ");
+  // Espaço para separar no loop
+  const espaco = "\u00A0\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0\u00A0";
+  const displayContent = `${mensagens}${espaco}${mensagens}${espaco}`;
+
   return (
     <div className={`bg-gradient-to-r ${getTipoColor()} text-white overflow-hidden relative shadow-lg border-b-2 border-white/20`}>
       <div className="relative">
         {/* Efeito de brilho animado */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
-        
-        <div className="flex items-center gap-4 py-3 px-4 relative z-10">
-          {/* Badge de Notícias */}
-          <div className="flex items-center gap-2 shrink-0 px-4 py-1.5 bg-black/30 backdrop-blur-sm rounded-full border border-white/20 shadow-lg">
-            <Bell className="h-5 w-5 animate-bounce" />
-            <span className="font-black text-xs uppercase tracking-widest drop-shadow-lg">
+
+        <div className="flex items-center gap-4 py-2 px-4 relative z-10 w-full">
+          {/* Badge de Notícias - Restored but simplified */}
+          <div className="flex items-center gap-2 shrink-0 px-3 py-1 bg-black/20 backdrop-blur-sm rounded-full border border-white/20 shadow-sm z-20">
+            <Bell className="h-3.5 w-3.5" />
+            <span className="font-bold text-[10px] uppercase tracking-wider">
               NOTÍCIAS
             </span>
           </div>
 
-          {/* Separador animado */}
-          <div className="h-6 w-0.5 bg-white/40 animate-pulse"></div>
+          {/* Separador */}
+          <div className="h-5 w-0.5 bg-white/40 z-20"></div>
 
           {/* Ticker com scroll contínuo */}
-          <div className="flex-1 overflow-hidden relative">
+          <div className="flex-1 overflow-hidden relative h-6">
             <div className="ticker-wrapper">
-              <div className="ticker-content">
-                <span className="font-bold text-sm md:text-base drop-shadow-md whitespace-nowrap">
-                  {mensagemDuplicada}
-                </span>
+              <div className="ticker-content font-medium text-sm md:text-base whitespace-nowrap">
+                {displayContent}
               </div>
             </div>
           </div>
@@ -93,22 +107,26 @@ export const NewsTicker = () => {
         .ticker-wrapper {
           width: 100%;
           overflow: hidden;
-          position: relative;
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: 100%;
+          display: flex;
+          align-items: center;
         }
         
         .ticker-content {
           display: inline-block;
-          white-space: nowrap;
           will-change: transform;
-          animation: ticker-scroll 70s linear infinite;
+          animation: ticker-scroll ${Math.max(30, notificacoes.length * 15)}s linear infinite;
         }
         
         @keyframes ticker-scroll {
           0% {
-            transform: translateX(100%);
+            transform: translateX(0);
           }
           100% {
-            transform: translateX(calc(-50%));
+            transform: translateX(-50%);
           }
         }
         
@@ -127,4 +145,3 @@ export const NewsTicker = () => {
     </div>
   );
 };
-

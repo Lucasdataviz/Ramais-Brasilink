@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { AdminUser, Ramal, Departamento, UsuarioTelefonia, NumeroTecnico, Notificacao, IPPermitido } from './types';
+import { AdminUser, Ramal, Departamento, UsuarioTelefonia, NumeroTecnico, Notificacao, IPPermitido, UserRole } from './types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zamksbryvuuaxxwszdgc.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphbWtzYnJ5dnV1YXh4d3N6ZGdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4OTA2NTUsImV4cCI6MjA2MDQ2NjY1NX0.KKcW7dlvWHBwT7dnKmeDNwTIjK2chWkgCMvGYhghOkY';
@@ -16,7 +16,7 @@ export const getDepartamentos = async (): Promise<Departamento[]> => {
     .select('*')
     .eq('ativo', true)
     .order('ordem', { ascending: true });
-  
+
   if (error) {
     console.error('Error fetching departamentos:', error);
     return [];
@@ -29,7 +29,7 @@ export const getAllDepartamentos = async (): Promise<Departamento[]> => {
     .from('departamentos')
     .select('*')
     .order('ordem', { ascending: true });
-  
+
   if (error) {
     console.error('Error fetching all departamentos:', error);
     return [];
@@ -43,7 +43,7 @@ export const getDepartamentoById = async (id: string): Promise<Departamento | nu
     .select('*')
     .eq('id', id)
     .single();
-  
+
   if (error) {
     console.error('Error fetching departamento:', error);
     return null;
@@ -57,7 +57,7 @@ export const createDepartamento = async (departamento: Omit<Departamento, 'id' |
     .insert([departamento])
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 };
@@ -69,7 +69,7 @@ export const updateDepartamento = async (id: string, updates: Partial<Departamen
     .eq('id', id)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 };
@@ -80,16 +80,16 @@ export const deleteDepartamento = async (id: string) => {
     .from('ramais')
     .select('id')
     .eq('departamento', id);
-  
+
   if (ramais && ramais.length > 0) {
     throw new Error('Não é possível deletar um departamento que possui ramais associados');
   }
-  
+
   const { error } = await supabase
     .from('departamentos')
     .delete()
     .eq('id', id);
-  
+
   if (error) throw error;
 };
 
@@ -106,7 +106,7 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
     .from('admin_users')
     .select('*')
     .order('created_at', { ascending: false });
-  
+
   if (error) {
     console.error('Error fetching admin users:', error);
     return [];
@@ -120,7 +120,7 @@ export const createAdminUser = async (user: Omit<AdminUser, 'id' | 'created_at' 
     .insert([user])
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 };
@@ -132,7 +132,7 @@ export const updateAdminUser = async (id: string, updates: Partial<AdminUser>) =
     .eq('id', id)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 };
@@ -142,7 +142,7 @@ export const deleteAdminUser = async (id: string) => {
     .from('admin_users')
     .delete()
     .eq('id', id);
-  
+
   if (error) throw error;
 };
 
@@ -150,12 +150,12 @@ export const deleteAdminUser = async (id: string) => {
 // FUNÇÕES PARA USUÁRIOS TELEFONIA
 // ========================================
 
-export const getUsuariosTelefonia = async (): Promise<UsuarioTelefonia[]> => {
+export const getUsuariosTelefonia = async (): Promise<Partial<UsuarioTelefonia>[]> => {
   const { data, error } = await supabase
     .from('usuario_telefonia')
     .select('id, nome, email, role, departamento, ativo, ultimo_login, created_at, updated_at')
     .order('created_at', { ascending: false });
-  
+
   if (error) {
     console.error('Error fetching usuarios telefonia:', error);
     return [];
@@ -169,7 +169,7 @@ export const getUsuarioTelefoniaByEmail = async (email: string): Promise<Usuario
     .select('*')
     .eq('email', email)
     .single();
-  
+
   if (error) {
     console.error('Error fetching usuario telefonia:', error);
     return null;
@@ -183,7 +183,7 @@ export const createUsuarioTelefonia = async (usuario: Omit<UsuarioTelefonia, 'id
     .insert([usuario])
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 };
@@ -195,7 +195,7 @@ export const updateUsuarioTelefonia = async (id: string, updates: Partial<Usuari
     .eq('id', id)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 };
@@ -205,7 +205,7 @@ export const deleteUsuarioTelefonia = async (id: string) => {
     .from('usuario_telefonia')
     .delete()
     .eq('id', id);
-  
+
   if (error) throw error;
 };
 
@@ -216,54 +216,47 @@ export const toggleUsuarioTelefoniaStatus = async (id: string, currentStatus: bo
     .eq('id', id)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 };
 
 // Função de login usando a tabela usuario_telefonia
+// Função de login usando a tabela usuario_telefonia via RPC seguro
 export const loginAdmin = async (email: string, password: string): Promise<AdminUser | null> => {
   try {
-    // Buscar usuário na tabela usuario_telefonia usando email
-    const { data: usuario, error } = await supabase
-      .from('usuario_telefonia')
-      .select('*')
-      .eq('email', email)
-      .single();
-    
-    if (error || !usuario) {
-      throw new Error('Email ou senha inválidos');
+    // Chamar função RPC segura no banco de dados
+    console.log('Calling login_admin RPC...');
+    const { data: result, error } = await supabase.rpc('login_admin', {
+      p_email: email,
+      p_password: password
+    });
+
+    if (error) {
+      console.error('RPC Error:', error);
+      throw new Error('Erro ao conectar com o servidor');
     }
-    
-    // Verificar se o usuário está ativo
-    if (usuario.ativo === false) {
-      throw new Error('Usuário inativo');
+
+    // Verificar resposta da função
+    if (!result || !result.success) {
+      throw new Error(result?.error || 'Email ou senha inválidos');
     }
-    
-    // Comparar senha em texto simples
-    if (usuario.senha !== password) {
-      throw new Error('Email ou senha inválidos');
-    }
-    
-    // Atualizar ultimo_login
+
+    const usuario = result.user;
     const now = new Date().toISOString();
-    await supabase
-      .from('usuario_telefonia')
-      .update({ ultimo_login: now, updated_at: now })
-      .eq('id', usuario.id);
-    
-    // Converter UsuarioTelefonia para AdminUser
+
+    // Converter para AdminUser
     const adminUser: AdminUser = {
       id: usuario.id,
       full_name: usuario.nome || '',
       email: usuario.email,
       role: (usuario.role as UserRole) || 'admin',
       last_login: now,
-      sip_config: undefined, // Não existe na tabela
+      sip_config: undefined,
       created_at: usuario.created_at || now,
       updated_at: now,
     };
-    
+
     return adminUser;
   } catch (error: any) {
     console.error('Login error:', error);
@@ -280,7 +273,7 @@ export const getRamais = async (): Promise<Ramal[]> => {
     .from('ramais')
     .select('*')
     .order('ramal', { ascending: true });
-  
+
   if (error) {
     console.error('Error fetching ramais:', error);
     return [];
@@ -294,21 +287,21 @@ export const getDepartamentosFromRamais = async (): Promise<Departamento[]> => {
     .from('ramais')
     .select('departamento, status')
     .order('departamento', { ascending: true });
-  
+
   if (error) {
     console.error('Error fetching departamentos from ramais:', error);
     return [];
   }
-  
+
   // Obter valores únicos de departamento
   const departamentosUnicos = Array.from(new Set(ramais?.map(r => r.departamento).filter(Boolean) || []));
-  
+
   // Criar objetos Departamento a partir dos nomes únicos
   const departamentos: Departamento[] = departamentosUnicos.map((nome, index) => {
     // Verificar se há pelo menos um ramal ativo neste departamento
     const ramaisDoDepartamento = ramais?.filter(r => r.departamento === nome) || [];
     const temRamalAtivo = ramaisDoDepartamento.some(r => r.status === 'ativo');
-    
+
     return {
       id: nome, // Usar nome como ID temporário
       nome: nome,
@@ -321,7 +314,7 @@ export const getDepartamentosFromRamais = async (): Promise<Departamento[]> => {
       updated_at: new Date().toISOString(),
     };
   });
-  
+
   return departamentos;
 };
 
@@ -332,7 +325,7 @@ export const createRamalWithDepartamento = async (ramalData: Omit<Ramal, 'id' | 
     .insert([ramalData])
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 };
@@ -341,13 +334,13 @@ export const createRamalWithDepartamento = async (ramalData: Omit<Ramal, 'id' | 
 export const updateRamaisByDepartamento = async (oldDepartamento: string, newDepartamento: string) => {
   const { data, error } = await supabase
     .from('ramais')
-    .update({ 
+    .update({
       departamento: newDepartamento,
       updated_at: new Date().toISOString()
     })
     .eq('departamento', oldDepartamento)
     .select();
-  
+
   if (error) throw error;
   return data;
 };
@@ -358,7 +351,7 @@ export const deleteRamaisByDepartamento = async (departamento: string) => {
     .from('ramais')
     .delete()
     .eq('departamento', departamento);
-  
+
   if (error) throw error;
 };
 
@@ -368,7 +361,7 @@ export const getRamalByNumber = async (ramal: string): Promise<Ramal | null> => 
     .select('*')
     .eq('ramal', ramal)
     .single();
-  
+
   if (error) {
     console.error('Error fetching ramal:', error);
     return null;
@@ -382,7 +375,7 @@ export const getRamalsByDepartamento = async (departamento: string): Promise<Ram
     .select('*')
     .eq('departamento', departamento)
     .order('ramal', { ascending: true });
-  
+
   if (error) {
     console.error('Error fetching ramais by department:', error);
     return [];
@@ -391,40 +384,78 @@ export const getRamalsByDepartamento = async (departamento: string): Promise<Ram
 };
 
 export const createRamal = async (ramal: Omit<Ramal, 'id' | 'created_at' | 'updated_at'>) => {
-  const { data, error } = await supabase
-    .from('ramais')
-    .insert([ramal])
-    .select()
-    .single();
-  
-  if (error) throw error;
+  // Use secure RPC for creation to bypass RLS limitations if present
+  console.log('Calling create_ramal RPC...');
+  const { data, error } = await supabase.rpc('create_ramal', {
+    p_ramal: ramal
+  });
+
+  if (error) {
+    console.error('RPC Error (create_ramal):', error);
+    throw error;
+  }
   return data;
 };
 
 export const updateRamal = async (id: string, updates: Partial<Ramal>) => {
-  const { data, error } = await supabase
-    .from('ramais')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-  
-  if (error) throw error;
+  // Use secure RPC for update to bypass RLS limitations
+  console.log('Calling update_ramal RPC...');
+  const { data, error } = await supabase.rpc('update_ramal', {
+    p_id: id,
+    p_updates: updates
+  });
+
+  if (error) {
+    console.error('RPC Error (update_ramal):', error);
+    throw error;
+  }
   return data;
 };
 
 export const deleteRamal = async (id: string) => {
-  const { error } = await supabase
-    .from('ramais')
-    .delete()
-    .eq('id', id);
-  
-  if (error) throw error;
+  // Use secure RPC for deletion
+  console.log('Calling delete_ramal RPC...');
+  const { error } = await supabase.rpc('delete_ramal', {
+    p_id: id
+  });
+
+  if (error) {
+    console.error('RPC Error (delete_ramal):', error);
+    throw error;
+  }
 };
 
 export const toggleRamalStatus = async (id: string, currentStatus: 'ativo' | 'inativo') => {
   const newStatus = currentStatus === 'ativo' ? 'inativo' : 'ativo';
   return updateRamal(id, { status: newStatus });
+};
+
+// Atualizar configuração de servidor/domínio para TODOS os ramais
+export const updateAllRamaisConfig = async (config: { dominio?: string; servidor_sip?: string }) => {
+  // Construir objeto de atualização apenas com campos definidos
+  const updates: any = { updated_at: new Date().toISOString() };
+  if (config.dominio && config.dominio.trim() !== '') updates.dominio = config.dominio;
+  if (config.servidor_sip && config.servidor_sip.trim() !== '') updates.servidor_sip = config.servidor_sip;
+
+  if (Object.keys(updates).length <= 1) return; // Nada para atualizar além do timestamp
+
+  // Atualizar todos os registros da tabela 'ramais'
+  // Nota: Sem cláusula .eq(), o Supabase (PostgREST) pode bloquear atualizações em massa por padrão se não tiver header específico
+  // Mas vamos tentar. Se falhar, faremos loop no frontend ou usaremos uma prop 'not_null' se existir um campo comum.
+  // UPDATE: Supabase client-side update usually requires a WHERE clause for safety.
+  // We can use .neq('id', '00000000-0000-0000-0000-000000000000') to match all valid UUIDs.
+
+  // Use secure RPC for bulk update
+  console.log('Calling update_all_ramais_config RPC...');
+  const { data, error } = await supabase.rpc('update_all_ramais_config', {
+    p_updates: config
+  });
+
+  if (error) {
+    console.error('RPC Error (update_all_ramais_config):', error);
+    throw error;
+  }
+  return data;
 };
 
 // ========================================
@@ -434,14 +465,14 @@ export const toggleRamalStatus = async (id: string, currentStatus: 'ativo' | 'in
 export const getNumeroTecnicos = async (tipo?: string): Promise<NumeroTecnico[]> => {
   let query = supabase
     .from('numero_tecnicos')
-    .select('id, nome, telefone, descricao, tipo, created_at, updated_at');
-  
+    .select('id, nome, telefone, descricao, tipo, supervisor, coordenador, areas_atuacao, created_at, updated_at');
+
   if (tipo) {
     query = query.eq('tipo', tipo);
   }
-  
+
   const { data, error } = await query.order('nome', { ascending: true });
-  
+
   if (error) {
     console.error('Error fetching numero_tecnicos:', error);
     return [];
@@ -452,10 +483,10 @@ export const getNumeroTecnicos = async (tipo?: string): Promise<NumeroTecnico[]>
 export const getNumeroTecnicoById = async (id: string): Promise<NumeroTecnico | null> => {
   const { data, error } = await supabase
     .from('numero_tecnicos')
-    .select('id, nome, telefone, descricao, tipo, created_at, updated_at')
+    .select('id, nome, telefone, descricao, tipo, supervisor, coordenador, areas_atuacao, created_at, updated_at')
     .eq('id', id)
     .single();
-  
+
   if (error) {
     console.error('Error fetching numero_tecnico:', error);
     return null;
@@ -471,10 +502,13 @@ export const createNumeroTecnico = async (tecnico: Omit<NumeroTecnico, 'id' | 'c
       telefone: tecnico.telefone,
       descricao: tecnico.descricao,
       tipo: tecnico.tipo,
+      supervisor: tecnico.supervisor,
+      coordenador: tecnico.coordenador,
+      areas_atuacao: tecnico.areas_atuacao,
     }])
-    .select('id, nome, telefone, descricao, tipo, created_at, updated_at')
+    .select('id, nome, telefone, descricao, tipo, supervisor, coordenador, areas_atuacao, created_at, updated_at')
     .single();
-  
+
   if (error) throw error;
   return data;
 };
@@ -483,19 +517,22 @@ export const updateNumeroTecnico = async (id: string, updates: Partial<NumeroTec
   const updateData: any = {
     updated_at: new Date().toISOString(),
   };
-  
+
   if (updates.nome) updateData.nome = updates.nome;
   if (updates.telefone) updateData.telefone = updates.telefone;
   if (updates.descricao !== undefined) updateData.descricao = updates.descricao;
   if (updates.tipo) updateData.tipo = updates.tipo;
-  
+  if (updates.supervisor !== undefined) updateData.supervisor = updates.supervisor;
+  if (updates.coordenador !== undefined) updateData.coordenador = updates.coordenador;
+  if (updates.areas_atuacao !== undefined) updateData.areas_atuacao = updates.areas_atuacao;
+
   const { data, error } = await supabase
     .from('numero_tecnicos')
     .update(updateData)
     .eq('id', id)
-    .select('id, nome, telefone, descricao, tipo, created_at, updated_at')
+    .select('id, nome, telefone, descricao, tipo, supervisor, coordenador, areas_atuacao, created_at, updated_at')
     .single();
-  
+
   if (error) throw error;
   return data;
 };
@@ -505,7 +542,7 @@ export const deleteNumeroTecnico = async (id: string) => {
     .from('numero_tecnicos')
     .delete()
     .eq('id', id);
-  
+
   if (error) throw error;
 };
 
@@ -516,7 +553,7 @@ export const deleteNumeroTecnico = async (id: string) => {
 export const createNotificacao = async (notificacao: Omit<Notificacao, 'id' | 'created_at'>) => {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 1); // Expira em 1 dia
-  
+
   const { data, error } = await supabase
     .from('notificacoes')
     .insert([{
@@ -526,14 +563,14 @@ export const createNotificacao = async (notificacao: Omit<Notificacao, 'id' | 'c
     }])
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 };
 
 export const getNotificacoesAtivas = async (): Promise<Notificacao[]> => {
   const now = new Date().toISOString();
-  
+
   const { data, error } = await supabase
     .from('notificacoes')
     .select('*')
@@ -541,7 +578,7 @@ export const getNotificacoesAtivas = async (): Promise<Notificacao[]> => {
     .gte('expires_at', now)
     .order('created_at', { ascending: false })
     .limit(50);
-  
+
   if (error) {
     console.error('Error fetching notificacoes:', error);
     return [];
@@ -555,7 +592,7 @@ export const getAllNotificacoes = async (limit: number = 100): Promise<Notificac
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit);
-  
+
   if (error) {
     console.error('Error fetching all notificacoes:', error);
     return [];
@@ -568,7 +605,7 @@ export const marcarNotificacaoComoInativa = async (id: string) => {
     .from('notificacoes')
     .update({ ativo: false })
     .eq('id', id);
-  
+
   if (error) throw error;
 };
 
@@ -589,7 +626,7 @@ export const criarNotificacaoRamalAtualizado = async (ramalAntigo: Ramal, ramalN
   const ramalAntigoShort = getUltimosDigitos(ramalAntigo.ramal);
   const ramalNovoShort = getUltimosDigitos(ramalNovo.ramal);
   const nomeDisplay = ramalNovo.nome || ramalAntigo.nome || 'sem nome';
-  
+
   // Verificar todas as mudanças
   if (ramalAntigo.ramal !== ramalNovo.ramal) {
     mudancas.push(`número de ${ramalAntigoShort} para ${ramalNovoShort}`);
@@ -602,11 +639,11 @@ export const criarNotificacaoRamalAtualizado = async (ramalAntigo: Ramal, ramalN
     const deptNovo = ramalNovo.departamento || 'sem departamento';
     mudancas.push(`departamento de "${deptAntigo}" para "${deptNovo}"`);
   }
-  
+
   if (mudancas.length > 0) {
     // Criar mensagem incluindo TODAS as mudanças
     const mensagem = `Foi realizada uma atualização do ramal ${ramalNovoShort} (${nomeDisplay}). ${mudancas.join(', ')}.`;
-    
+
     await createNotificacao({
       tipo: 'ramal_atualizado',
       titulo: 'Ramal Atualizado',
@@ -623,7 +660,7 @@ export const criarNotificacaoRamalCriado = async (ramal: Ramal) => {
   const nomeDisplay = ramal.nome || 'sem nome';
   const deptDisplay = ramal.departamento ? ` no departamento "${ramal.departamento}"` : '';
   const mensagem = `Um novo ramal foi criado com o número ${ramalShort} (${nomeDisplay})${deptDisplay}.`;
-  
+
   await createNotificacao({
     tipo: 'ramal_criado',
     titulo: 'Novo Ramal Criado',
@@ -636,7 +673,7 @@ export const criarNotificacaoRamalCriado = async (ramal: Ramal) => {
 // Função auxiliar para criar notificação de novo departamento
 export const criarNotificacaoDepartamentoCriado = async (departamento: Departamento) => {
   const mensagem = `Um novo departamento foi criado: "${departamento.nome}".`;
-  
+
   await createNotificacao({
     tipo: 'departamento_criado',
     titulo: 'Novo Departamento Criado',
@@ -649,7 +686,7 @@ export const criarNotificacaoDepartamentoCriado = async (departamento: Departame
 // Função auxiliar para criar notificação de mudança de técnico
 export const criarNotificacaoTecnicoAtualizado = async (tecnicoAntigo: NumeroTecnico, tecnicoNovo: NumeroTecnico) => {
   const mudancas: string[] = [];
-  
+
   if (tecnicoAntigo.nome !== tecnicoNovo.nome) {
     mudancas.push(`nome de "${tecnicoAntigo.nome || 'sem nome'}" para "${tecnicoNovo.nome || 'sem nome'}"`);
   }
@@ -659,11 +696,11 @@ export const criarNotificacaoTecnicoAtualizado = async (tecnicoAntigo: NumeroTec
   if (tecnicoAntigo.tipo !== tecnicoNovo.tipo) {
     mudancas.push(`cidade/tipo de "${tecnicoAntigo.tipo}" para "${tecnicoNovo.tipo}"`);
   }
-  
+
   if (mudancas.length > 0) {
     const nomeDisplay = tecnicoNovo.nome || tecnicoAntigo.nome || 'sem nome';
     const mensagem = `Foi realizada uma atualização do técnico ${nomeDisplay}. ${mudancas.join(', ')}.`;
-    
+
     await createNotificacao({
       tipo: 'tecnico_atualizado',
       titulo: 'Técnico Atualizado',
@@ -677,7 +714,7 @@ export const criarNotificacaoTecnicoAtualizado = async (tecnicoAntigo: NumeroTec
 // Função auxiliar para criar notificação de novo técnico
 export const criarNotificacaoTecnicoCriado = async (tecnico: NumeroTecnico) => {
   const mensagem = `Um novo técnico foi criado: ${tecnico.nome} (${tecnico.telefone}) - ${tecnico.tipo}.`;
-  
+
   await createNotificacao({
     tipo: 'tecnico_criado',
     titulo: 'Novo Técnico Criado',
@@ -690,7 +727,7 @@ export const criarNotificacaoTecnicoCriado = async (tecnico: NumeroTecnico) => {
 // Função para criar notificação consolidada de múltiplas mudanças
 export const criarNotificacaoMudancasMultiplas = async (mudancas: string[]) => {
   if (mudancas.length === 0) return;
-  
+
   // Se houver apenas uma mudança, usar formato mais simples
   if (mudancas.length === 1) {
     const mensagem = mudancas[0];
@@ -703,10 +740,10 @@ export const criarNotificacaoMudancasMultiplas = async (mudancas: string[]) => {
     });
     return;
   }
-  
+
   // Múltiplas mudanças
   const mensagem = `Foram realizadas as seguintes atualizações: ${mudancas.join(', ')}.`;
-  
+
   await createNotificacao({
     tipo: 'mudancas_multiplas',
     titulo: 'Múltiplas Atualizações',
@@ -724,32 +761,32 @@ export const criarNotificacaoConsolidada = async (operacoes: {
   detalhes: string;
 }[]) => {
   if (operacoes.length === 0) return;
-  
+
   const mudancas = operacoes.map(op => {
     switch (op.tipo) {
       case 'ramal':
-        return op.acao === 'criado' 
+        return op.acao === 'criado'
           ? `novo ramal: ${op.detalhes}`
           : op.acao === 'atualizado'
-          ? `ramal atualizado: ${op.detalhes}`
-          : `ramal deletado: ${op.detalhes}`;
+            ? `ramal atualizado: ${op.detalhes}`
+            : `ramal deletado: ${op.detalhes}`;
       case 'tecnico':
         return op.acao === 'criado'
           ? `novo técnico: ${op.detalhes}`
           : op.acao === 'atualizado'
-          ? `técnico atualizado: ${op.detalhes}`
-          : `técnico deletado: ${op.detalhes}`;
+            ? `técnico atualizado: ${op.detalhes}`
+            : `técnico deletado: ${op.detalhes}`;
       case 'departamento':
         return op.acao === 'criado'
           ? `novo departamento: ${op.detalhes}`
           : op.acao === 'atualizado'
-          ? `departamento atualizado: ${op.detalhes}`
-          : `departamento deletado: ${op.detalhes}`;
+            ? `departamento atualizado: ${op.detalhes}`
+            : `departamento deletado: ${op.detalhes}`;
       default:
         return op.detalhes;
     }
   });
-  
+
   await criarNotificacaoMudancasMultiplas(mudancas);
 };
 
@@ -762,7 +799,7 @@ export const getIPsPermitidos = async (): Promise<IPPermitido[]> => {
     .from('ips_permitidos')
     .select('*')
     .order('created_at', { ascending: false });
-  
+
   if (error) {
     console.error('Error fetching IPs permitidos:', error);
     return [];
@@ -779,7 +816,7 @@ export const createIPPermitido = async (ipData: Omit<IPPermitido, 'id' | 'create
     })
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 };
@@ -794,7 +831,7 @@ export const updateIPPermitido = async (id: string, ipData: Partial<Omit<IPPermi
     .eq('id', id)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 };
@@ -804,14 +841,14 @@ export const deleteIPPermitido = async (id: string): Promise<void> => {
     .from('ips_permitidos')
     .delete()
     .eq('id', id);
-  
+
   if (error) throw error;
 };
 
 // Função para chamar API de atualização do nginx (se configurada)
 export const updateNginxConfig = async (): Promise<boolean> => {
   const apiUrl = import.meta.env.VITE_NGINX_UPDATE_API_URL;
-  
+
   if (!apiUrl) {
     console.log('VITE_NGINX_UPDATE_API_URL não configurada. Atualização automática desabilitada.');
     return false;

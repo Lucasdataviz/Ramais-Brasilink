@@ -122,7 +122,7 @@ export interface AuditLog {
 // ========================================
 // Interface para Número de Técnicos
 // ========================================
-export type TipoTecnico = 'Rio Verde' | 'Viçosa' | 'Tianguá' | 'Frecheirinha' | 'Infraestrutura' | 'Araquém' | 'Tecno' | string; // Permite cidade customizada
+export type TipoTecnico = 'Rio Verde' | 'Viçosa' | 'Tianguá' | 'Frecheirinha' | 'Infraestrutura' | 'Araquém' | string; // Permite cidade customizada
 
 export interface NumeroTecnico {
   id: string;
@@ -130,6 +130,9 @@ export interface NumeroTecnico {
   telefone: string; // Número de telefone do técnico
   descricao: string; // Função do técnico (ex: Instalação, Manutenção)
   tipo: TipoTecnico; // Cidade: Rio Verde, Viçosa, Tianguá, Frecheirinha, Infraestrutura, Araquém ou cidade customizada
+  supervisor?: boolean;
+  coordenador?: boolean;
+  areas_atuacao?: string[]; // Cidades adicionais de atuação
   created_at: string;
   updated_at: string;
 }

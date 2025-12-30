@@ -45,8 +45,8 @@ import {
   criarNotificacaoDepartamentoCriado,
 } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { 
-  Building2, Plus, Edit, Trash2, Power, PowerOff, Phone, Check, ChevronsUpDown, Search
+import {
+  Building2, Plus, Edit, Trash2, Power, PowerOff, Phone, Check, ChevronsUpDown, Search, ChevronLeft, User
 } from 'lucide-react';
 import { PREDEFINED_ICONS, getIconComponent as getIcon } from '@/lib/icons';
 
@@ -87,6 +87,9 @@ export const DepartamentosManager = () => {
     status: 'ativo' as 'ativo' | 'inativo',
     ramaisSelecionados: [] as string[], // IDs dos ramais selecionados
   });
+
+  const [viewMode, setViewMode] = useState<'cards' | 'details'>('cards');
+  const [viewingDepartment, setViewingDepartment] = useState<Departamento | null>(null);
 
   useEffect(() => {
     loadData();
@@ -133,12 +136,12 @@ export const DepartamentosManager = () => {
 
   const handleOpenEditDialog = async (departamento: Departamento) => {
     setSelectedDepartamento(departamento);
-    
+
     // Buscar ramais vinculados a este departamento
     try {
       const ramaisDoDepartamento = await getRamalsByDepartamento(departamento.nome);
       const ramaisIds = ramaisDoDepartamento.map(r => r.id);
-      
+
       setFormData({
         nome: departamento.nome,
         icone: departamento.icone || 'Empresa',
@@ -171,7 +174,7 @@ export const DepartamentosManager = () => {
 
     try {
       setSaving(true);
-      
+
       // Tentar criar na tabela departamentos
       try {
         const novoDepartamento = await createDepartamento({
@@ -184,21 +187,21 @@ export const DepartamentosManager = () => {
           supervisor: formData.supervisor || null,
           coordenador: formData.coordenador || null,
         });
-        
+
         // Vincular ramais selecionados ao departamento
         if (formData.ramaisSelecionados.length > 0) {
           for (const ramalId of formData.ramaisSelecionados) {
             await updateRamal(ramalId, { departamento: formData.nome });
           }
         }
-        
+
         // Criar notificação
         try {
           await criarNotificacaoDepartamentoCriado(novoDepartamento);
         } catch (notifError) {
           console.error('Error creating notification:', notifError);
         }
-        
+
         toast.success('Departamento criado com sucesso!');
         setCreateDialogOpen(false);
         loadData();
@@ -240,7 +243,7 @@ export const DepartamentosManager = () => {
 
     try {
       setSaving(true);
-      
+
       // Tentar atualizar na tabela departamentos
       try {
         await updateDepartamento(selectedDepartamento.id, {
@@ -251,7 +254,7 @@ export const DepartamentosManager = () => {
           supervisor: formData.supervisor || null,
           coordenador: formData.coordenador || null,
         });
-        
+
         // Atualizar ramais vinculados
         // Primeiro, remover vínculo de todos os ramais do departamento antigo
         const ramaisAntigos = await getRamalsByDepartamento(selectedDepartamento.nome);
@@ -260,12 +263,12 @@ export const DepartamentosManager = () => {
             await updateRamal(ramal.id, { departamento: '' });
           }
         }
-        
+
         // Depois, adicionar vínculo dos ramais selecionados
         for (const ramalId of formData.ramaisSelecionados) {
           await updateRamal(ramalId, { departamento: formData.nome });
         }
-        
+
         toast.success('Departamento atualizado com sucesso!');
         setEditDialogOpen(false);
         loadData();
@@ -349,7 +352,7 @@ export const DepartamentosManager = () => {
   const filteredRamais = ramais.filter(ramal => {
     // Excluir supervisores e coordenadores
     if (ramal.supervisor || ramal.coordenador) return false;
-    
+
     if (!ramaisSearch) return true;
     const search = ramaisSearch.toLowerCase();
     return (
@@ -378,143 +381,219 @@ export const DepartamentosManager = () => {
 
   return (
     <div className="space-y-4">
-      <Card className="border-2 shadow-lg">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      {viewMode === 'cards' ? (
+        <Card className="border-2 shadow-lg">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl flex items-center gap-2">
+                  <Building2 className="h-6 w-6" />
+                  Gerenciar Departamentos
+                </CardTitle>
+                <CardDescription>
+                  Adicione, edite ou remova departamentos do sistema
+                </CardDescription>
+              </div>
+              <Button onClick={handleOpenCreateDialog}>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Departamento
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {departamentos.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground border rounded-lg border-dashed">
+                <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum departamento cadastrado</p>
+                <Button variant="link" onClick={handleOpenCreateDialog}>Criar primeiro departamento</Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {departamentos.map((dept) => {
+                  const deptRamais = getRamaisDoDepartamento(dept);
+                  return (
+                    <Card
+                      key={dept.id}
+                      className="cursor-pointer hover:shadow-md transition-all group overflow-hidden border-l-4"
+                      style={{ borderLeftColor: dept.cor }}
+                      onClick={() => {
+                        setViewingDepartment(dept);
+                        setViewMode('details');
+                      }}
+                    >
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-start">
+                          <div className="p-2 rounded-lg bg-secondary/50 group-hover:bg-secondary transition-colors">
+                            {getIconComponent(dept.icone || 'Empresa')}
+                          </div>
+                          <div className="flex flex-col gap-1 items-end">
+                            {dept.ativo ? (
+                              <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-0">Ativo</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-muted-foreground">Inativo</Badge>
+                            )}
+                          </div>
+                        </div>
+                        <CardTitle className="mt-4 text-xl">{dept.nome}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center text-sm text-muted-foreground bg-muted/50 p-2 rounded-md">
+                            <span className="flex items-center gap-2">
+                              <Phone className="h-4 w-4" />
+                              Ramais
+                            </span>
+                            <span className="font-bold text-foreground">{deptRamais.length}</span>
+                          </div>
+
+                          {(dept.supervisor || dept.coordenador) && (
+                            <div className="space-y-2 pt-2 border-t text-xs">
+                              {dept.supervisor && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                  <User className="h-3 w-3" />
+                                  <span className="truncate">Sup: {dept.supervisor.split('-')[0].trim()}</span>
+                                </div>
+                              )}
+                              {dept.coordenador && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                  <User className="h-3 w-3" />
+                                  <span className="truncate">Coord: {dept.coordenador.split('-')[0].trim()}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {/* Detail View Header */}
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                setViewMode('cards');
+                setViewingDepartment(null);
+              }}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
             <div>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <Building2 className="h-6 w-6" />
-                Gerenciar Departamentos
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <div
+                  className="p-2 rounded-md bg-muted"
+                  style={{ color: viewingDepartment?.cor }}
+                >
+                  {viewingDepartment && getIconComponent(viewingDepartment.icone || 'Empresa')}
+                </div>
+                {viewingDepartment?.nome}
+              </h2>
+              <p className="text-muted-foreground">
+                Gerencie as configurações e ramais deste departamento
+              </p>
+            </div>
+
+            <div className="ml-auto flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => viewingDepartment && handleToggleStatus(viewingDepartment)}
+              >
+                {viewingDepartment?.ativo ? (
+                  <>
+                    <PowerOff className="mr-2 h-4 w-4 text-red-500" />
+                    Desativar
+                  </>
+                ) : (
+                  <>
+                    <Power className="mr-2 h-4 w-4 text-green-500" />
+                    Ativar
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => viewingDepartment && handleOpenEditDialog(viewingDepartment)}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Editar Configurações
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon"
+                onClick={() => {
+                  if (viewingDepartment) {
+                    handleDelete(viewingDepartment.id, viewingDepartment.nome);
+                    setViewMode('cards');
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Ramais List */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Phone className="h-5 w-5" />
+                Ramais do Departamento
               </CardTitle>
               <CardDescription>
-                Adicione, edite ou remova departamentos do sistema
+                Lista de todos os ramais vinculados ao departamento {viewingDepartment?.nome}
               </CardDescription>
-            </div>
-            <Button onClick={handleOpenCreateDialog}>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Departamento
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Ícone</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Ramais</TableHead>
-                  <TableHead>Supervisor</TableHead>
-                  <TableHead>Coordenador</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {departamentos.length === 0 ? (
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                      Nenhum departamento cadastrado
-                    </TableCell>
+                    <TableHead>Número</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ) : (
-                  departamentos.map((departamento) => {
-                    const ramaisDoDepartamento = getRamaisDoDepartamento(departamento);
-                    return (
-                      <TableRow key={departamento.id}>
+                </TableHeader>
+                <TableBody>
+                  {viewingDepartment && getRamaisDoDepartamento(viewingDepartment).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        Nenhum ramal vinculado a este departamento.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    viewingDepartment && getRamaisDoDepartamento(viewingDepartment).map((ramal) => (
+                      <TableRow key={ramal.id}>
+                        <TableCell className="font-mono font-bold">{ramal.ramal}</TableCell>
+                        <TableCell>{ramal.nome}</TableCell>
                         <TableCell>
-                          {getIconComponent(departamento.icone || 'Empresa')}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: departamento.cor }}
-                            ></div>
-                            {departamento.nome}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {ramaisDoDepartamento.slice(0, 3).map((ramal) => (
-                              <Badge key={ramal.id} variant="outline" className="text-xs">
-                                <Phone className="h-3 w-3 mr-1" />
-                                {ramal.ramal}
-                              </Badge>
-                            ))}
-                            {ramaisDoDepartamento.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{ramaisDoDepartamento.length - 3}
-                              </Badge>
-                            )}
-                            {ramaisDoDepartamento.length === 0 && (
-                              <span className="text-xs text-muted-foreground">Nenhum ramal</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {departamento.supervisor ? (
-                            <Badge variant="secondary">{departamento.supervisor}</Badge>
+                          {ramal.supervisor ? (
+                            <Badge>Supervisor</Badge>
+                          ) : ramal.coordenador ? (
+                            <Badge variant="outline">Coordenador</Badge>
                           ) : (
-                            <span className="text-xs text-muted-foreground">-</span>
+                            <span className="text-muted-foreground text-sm">Padrão</span>
                           )}
                         </TableCell>
                         <TableCell>
-                          {departamento.coordenador ? (
-                            <Badge variant="secondary">{departamento.coordenador}</Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {departamento.ativo ? (
-                            <Badge className="bg-green-500 text-white">Ativo</Badge>
-                          ) : (
-                            <Badge variant="secondary">Inativo</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleStatus(departamento)}
-                              title={departamento.ativo ? 'Desativar' : 'Ativar'}
-                            >
-                              {departamento.ativo ? (
-                                <PowerOff className="h-4 w-4" />
-                              ) : (
-                                <Power className="h-4 w-4" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenEditDialog(departamento)}
-                              title="Editar"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(departamento.id, departamento.nome)}
-                              title="Excluir"
-                              className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Badge variant={ramal.status === 'ativo' ? 'default' : 'secondary'} className={ramal.status === 'ativo' ? 'bg-green-500' : ''}>
+                            {ramal.status}
+                          </Badge>
                         </TableCell>
                       </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Dialog para CRIAR departamento */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -525,7 +604,7 @@ export const DepartamentosManager = () => {
               Preencha as informações do novo departamento
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="create-nome">Nome *</Label>
@@ -727,9 +806,8 @@ export const DepartamentosManager = () => {
                       key={color}
                       type="button"
                       onClick={() => setFormData({ ...formData, cor: color })}
-                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                        formData.cor === color ? 'border-gray-900 dark:border-gray-100 ring-2 ring-offset-2' : 'border-gray-300 dark:border-gray-700'
-                      }`}
+                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${formData.cor === color ? 'border-gray-900 dark:border-gray-100 ring-2 ring-offset-2' : 'border-gray-300 dark:border-gray-700'
+                        }`}
                       style={{ backgroundColor: color }}
                       title={color}
                     />
@@ -809,7 +887,7 @@ export const DepartamentosManager = () => {
               Modifique as informações do departamento
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="edit-nome">Nome *</Label>
@@ -1010,9 +1088,8 @@ export const DepartamentosManager = () => {
                       key={color}
                       type="button"
                       onClick={() => setFormData({ ...formData, cor: color })}
-                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                        formData.cor === color ? 'border-gray-900 dark:border-gray-100 ring-2 ring-offset-2' : 'border-gray-300 dark:border-gray-700'
-                      }`}
+                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${formData.cor === color ? 'border-gray-900 dark:border-gray-100 ring-2 ring-offset-2' : 'border-gray-300 dark:border-gray-700'
+                        }`}
                       style={{ backgroundColor: color }}
                       title={color}
                     />

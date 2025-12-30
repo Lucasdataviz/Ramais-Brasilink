@@ -27,7 +27,7 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
   const getStatusColor = (status: string) => {
     // Aceita tanto 'active'/'ativo' quanto 'inactive'/'inativo'
     const normalizedStatus = status.toLowerCase();
-    
+
     if (normalizedStatus === 'active' || normalizedStatus === 'ativo') {
       return 'bg-green-500 text-white hover:bg-green-600';
     } else if (normalizedStatus === 'inactive' || normalizedStatus === 'inativo') {
@@ -40,7 +40,7 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
 
   const getStatusLabel = (status: string) => {
     const normalizedStatus = status.toLowerCase();
-    
+
     if (normalizedStatus === 'active' || normalizedStatus === 'ativo') {
       return 'Ativo';
     } else if (normalizedStatus === 'inactive' || normalizedStatus === 'inativo') {
@@ -54,16 +54,12 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
   const displayNumber = formatNumber(extension.number);
   const fullNumber = extension.number; // Número completo para ligação
 
-  // Obter preferência de usar apenas 4 dígitos
-  const useShortNumber = () => {
-    const preference = localStorage.getItem('useShortNumberForCalls');
-    return preference === 'true' || (showShortNumber && preference !== 'false');
-  };
+
 
   // Função para fazer ligação via SIP
   const handleCall = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     // Verificar se o ramal está ativo
     const normalizedStatus = extension.status.toLowerCase();
     if (normalizedStatus !== 'active' && normalizedStatus !== 'ativo') {
@@ -71,16 +67,17 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
       return;
     }
 
-    // Usar número curto (4 dígitos) se a preferência estiver ativa
-    const numberToCall = useShortNumber() && extension.number.length > 4 
-      ? extension.number.slice(-4) 
+    // Lógica para o MicroSIP: Sempre usar os últimos 4 dígitos se o número for maior que 4
+    // O usuário solicitou que fosse automático ("so com os 4 ultios nueros, uando for pro microsuip")
+    const numberToCall = extension.number.length > 4
+      ? extension.number.slice(-4)
       : extension.number;
 
     try {
       // Tentar usar protocolo SIP primeiro (para softphones como MicroSIP)
       // Formato: sip:numero@servidor ou sip:numero
       const sipUrl = `sip:${numberToCall}`;
-      
+
       // Criar um link temporário e clicar nele
       const link = document.createElement('a');
       link.href = sipUrl;
@@ -88,7 +85,7 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast.success(`Iniciando ligação para ${numberToCall}...`);
     } catch (error) {
       // Fallback: tentar protocolo tel: (para dispositivos móveis)

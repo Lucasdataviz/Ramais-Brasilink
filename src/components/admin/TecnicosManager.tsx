@@ -36,13 +36,14 @@ import {
   deleteNumeroTecnico,
 } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Wrench, Plus, Edit, Trash2, Phone } from 'lucide-react';
+import { Wrench, Plus, Edit, Trash2, Phone, ChevronLeft } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
-const TIPOS_TECNICO_PREDEFINIDOS: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura', 'Araquém', 'Tecno', 'Cocal-PI'];
+const TIPOS_TECNICO_PREDEFINIDOS: TipoTecnico[] = ['Rio Verde', 'Viçosa', 'Tianguá', 'Frecheirinha', 'Infraestrutura', 'Araquém', 'Cocal-PI'];
 
 export const TecnicosManager = () => {
   const [tecnicos, setTecnicos] = useState<NumeroTecnico[]>([]);
@@ -54,11 +55,16 @@ export const TecnicosManager = () => {
   const [cidadeOpen, setCidadeOpen] = useState(false);
   const [cidadesDisponiveis, setCidadesDisponiveis] = useState<string[]>([]);
   const [cidadeSearch, setCidadeSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     nome: '',
     telefone: '',
     descricao: '',
     tipo: 'Rio Verde' as TipoTecnico,
+    supervisor: false,
+    coordenador: false,
+    areas_atuacao: [] as string[],
   });
 
   useEffect(() => {
@@ -87,6 +93,9 @@ export const TecnicosManager = () => {
       telefone: '',
       descricao: '',
       tipo: 'Rio Verde',
+      supervisor: false,
+      coordenador: false,
+      areas_atuacao: [],
     });
     setCidadeSearch('');
     setCreateDialogOpen(true);
@@ -99,6 +108,9 @@ export const TecnicosManager = () => {
       telefone: tecnico.telefone,
       descricao: tecnico.descricao,
       tipo: tecnico.tipo,
+      supervisor: tecnico.supervisor || false,
+      coordenador: tecnico.coordenador || false,
+      areas_atuacao: tecnico.areas_atuacao || [],
     });
     setEditDialogOpen(true);
   };
@@ -116,8 +128,11 @@ export const TecnicosManager = () => {
         telefone: formData.telefone,
         descricao: formData.descricao,
         tipo: formData.tipo,
+        supervisor: formData.supervisor,
+        coordenador: formData.coordenador,
+        areas_atuacao: formData.areas_atuacao,
       });
-      
+
       // Criar notificação
       try {
         const { criarNotificacaoTecnicoCriado } = await import('@/lib/supabase');
@@ -125,19 +140,19 @@ export const TecnicosManager = () => {
       } catch (notifError) {
         console.error('Error creating notification:', notifError);
       }
-      
+
       toast.success('Técnico criado com sucesso!');
       setCreateDialogOpen(false);
       loadTecnicos();
     } catch (error: any) {
       console.error('Error creating tecnico:', error);
       let errorMessage = error.message || 'Erro ao criar técnico';
-      
+
       // Verificar se é erro de constraint (cidade não permitida)
       if (error.message?.includes('check constraint') || error.message?.includes('violates check constraint')) {
         errorMessage = `A cidade "${formData.tipo}" não está permitida no banco de dados. Execute o script SQL para adicionar esta cidade: scripts/fixes/sql_add_cocal_pi_tecnicos.sql`;
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setSaving(false);
@@ -157,8 +172,11 @@ export const TecnicosManager = () => {
         telefone: formData.telefone,
         descricao: formData.descricao,
         tipo: formData.tipo,
+        supervisor: formData.supervisor,
+        coordenador: formData.coordenador,
+        areas_atuacao: formData.areas_atuacao,
       });
-      
+
       // Criar notificação
       try {
         const { criarNotificacaoTecnicoAtualizado } = await import('@/lib/supabase');
@@ -166,19 +184,19 @@ export const TecnicosManager = () => {
       } catch (notifError) {
         console.error('Error creating notification:', notifError);
       }
-      
+
       toast.success('Técnico atualizado com sucesso!');
       setEditDialogOpen(false);
       loadTecnicos();
     } catch (error: any) {
       console.error('Error updating tecnico:', error);
       let errorMessage = error.message || 'Erro ao atualizar técnico';
-      
+
       // Verificar se é erro de constraint (cidade não permitida)
       if (error.message?.includes('check constraint') || error.message?.includes('violates check constraint')) {
         errorMessage = `A cidade "${formData.tipo}" não está permitida no banco de dados. Execute o script SQL para adicionar esta cidade: scripts/fixes/sql_add_cocal_pi_tecnicos.sql`;
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setSaving(false);
@@ -208,7 +226,6 @@ export const TecnicosManager = () => {
       'Frecheirinha': 'bg-orange-500',
       'Infraestrutura': 'bg-red-500',
       'Araquém': 'bg-cyan-500',
-      'Tecno': 'bg-indigo-500',
       'Cocal-PI': 'bg-pink-500',
     };
     return colors[tipo] || 'bg-gray-500';
@@ -227,90 +244,148 @@ export const TecnicosManager = () => {
 
   return (
     <div className="space-y-4">
-      <Card className="border-2 shadow-lg">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <Wrench className="h-6 w-6" />
-                Gerenciar Técnicos
-              </CardTitle>
-              <CardDescription>
-                Adicione, edite ou remova técnicos do sistema. Os dados de status são obtidos da tabela ramais.
-              </CardDescription>
+      {/* View Mode Toggle */}
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {cidadesDisponiveis.map((cidade) => {
+            const count = tecnicos.filter(t => t.tipo === cidade).length;
+            const bgClass = getTipoBadgeColor(cidade as TipoTecnico).replace('bg-', 'border-').replace('500', '200'); // Light border
+
+            return (
+              <Card
+                key={cidade}
+                className={cn(
+                  "cursor-pointer hover:shadow-md transition-all border-l-4",
+                  bgClass === 'border-gray-500' ? "border-l-gray-500" : bgClass
+                )}
+                onClick={() => {
+                  setSelectedCity(cidade);
+                  setViewMode('list');
+                }}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl flex justify-between items-center">
+                    {cidade}
+                    <Badge variant="secondary" className="text-xs">
+                      {count} técnicos
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Clique para gerenciar os técnicos de {cidade}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card className="border-2 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setViewMode('grid');
+                    setSelectedCity(null);
+                  }}
+                  title="Voltar para lista de cidades"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                  <CardTitle className="text-2xl flex items-center gap-2">
+                    <Wrench className="h-6 w-6" />
+                    Técnicos de {selectedCity}
+                  </CardTitle>
+                  <CardDescription>
+                    Gerenciando {tecnicos.filter(t => t.tipo === selectedCity).length} técnicos em {selectedCity}
+                  </CardDescription>
+                </div>
+              </div>
+              <Button onClick={() => {
+                handleOpenCreateDialog();
+                if (selectedCity) {
+                  setFormData(prev => ({ ...prev, tipo: selectedCity as TipoTecnico }));
+                }
+              }}>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Técnico
+              </Button>
             </div>
-            <Button onClick={handleOpenCreateDialog}>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Técnico
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>Função</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tecnicos.length === 0 ? (
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      Nenhum técnico cadastrado
-                    </TableCell>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Função</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ) : (
-                  tecnicos.map((tecnico) => (
-                    <TableRow key={tecnico.id}>
-                      <TableCell className="font-medium">{tecnico.nome}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-mono">{tecnico.telefone}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">{tecnico.descricao}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`${getTipoBadgeColor(tecnico.tipo)} text-white`}>
-                          {tecnico.tipo}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEditDialog(tecnico)}
-                            title="Editar"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(tecnico.id, tecnico.nome)}
-                            title="Excluir"
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {tecnicos.filter(t => t.tipo === selectedCity).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                        Nenhum técnico cadastrado nesta cidade
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                  ) : (
+                    tecnicos
+                      .filter(t => t.tipo === selectedCity)
+                      .map((tecnico) => (
+                        <TableRow key={tecnico.id}>
+                          <TableCell className="font-medium">{tecnico.nome}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-mono">{tecnico.telefone}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">{tecnico.descricao}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`${getTipoBadgeColor(tecnico.tipo)} text-white`}>
+                              {tecnico.tipo}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenEditDialog(tecnico)}
+                                title="Editar"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(tecnico.id, tecnico.nome)}
+                                title="Excluir"
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Dialog para CRIAR técnico */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -321,7 +396,7 @@ export const TecnicosManager = () => {
               Preencha as informações do novo técnico
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -360,8 +435,8 @@ export const TecnicosManager = () => {
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0" align="start">
                   <Command shouldFilter={false}>
-                    <CommandInput 
-                      placeholder="Buscar cidade ou digite nova..." 
+                    <CommandInput
+                      placeholder="Buscar cidade ou digite nova..."
                       value={cidadeSearch}
                       onValueChange={(value) => setCidadeSearch(value)}
                     />
@@ -387,8 +462,8 @@ export const TecnicosManager = () => {
                       </CommandEmpty>
                       <CommandGroup>
                         {cidadesDisponiveis
-                          .filter(cidade => 
-                            !cidadeSearch || 
+                          .filter(cidade =>
+                            !cidadeSearch ||
                             cidade.toLowerCase().includes(cidadeSearch.toLowerCase())
                           )
                           .map((cidade) => (
@@ -434,6 +509,69 @@ export const TecnicosManager = () => {
                 rows={3}
               />
             </div>
+
+            <div className="flex gap-6 pt-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="create-supervisor"
+                  checked={formData.supervisor}
+                  onCheckedChange={(checked) => setFormData({ ...formData, supervisor: checked === true })}
+                />
+                <Label htmlFor="create-supervisor" className="text-sm font-normal cursor-pointer">
+                  Supervisor
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="create-coordenador"
+                  checked={formData.coordenador}
+                  onCheckedChange={(checked) => setFormData({ ...formData, coordenador: checked === true })}
+                />
+                <Label htmlFor="create-coordenador" className="text-sm font-normal cursor-pointer">
+                  Coordenador
+                </Label>
+              </div>
+            </div>
+
+            {(formData.coordenador || formData.supervisor) && (
+              <div className="space-y-2 pt-2">
+                <Label>Áreas de Atuação (Opcional)</Label>
+                <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    {cidadesDisponiveis.map((cidade) => (
+                      <div key={cidade} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`create-area-${cidade}`}
+                          checked={formData.areas_atuacao.includes(cidade)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setFormData({
+                                ...formData,
+                                areas_atuacao: [...formData.areas_atuacao, cidade],
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                areas_atuacao: formData.areas_atuacao.filter((c) => c !== cidade),
+                              });
+                            }
+                          }}
+                        />
+                        <Label
+                          htmlFor={`create-area-${cidade}`}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {cidade}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Selecione as cidades adicionais que este técnico atende além da cidade principal.
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -456,7 +594,7 @@ export const TecnicosManager = () => {
               Modifique as informações do técnico
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -493,8 +631,8 @@ export const TecnicosManager = () => {
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0" align="start">
                   <Command shouldFilter={false}>
-                    <CommandInput 
-                      placeholder="Buscar cidade ou digite nova..." 
+                    <CommandInput
+                      placeholder="Buscar cidade ou digite nova..."
                       value={cidadeSearch}
                       onValueChange={(value) => setCidadeSearch(value)}
                     />
@@ -520,8 +658,8 @@ export const TecnicosManager = () => {
                       </CommandEmpty>
                       <CommandGroup>
                         {cidadesDisponiveis
-                          .filter(cidade => 
-                            !cidadeSearch || 
+                          .filter(cidade =>
+                            !cidadeSearch ||
                             cidade.toLowerCase().includes(cidadeSearch.toLowerCase())
                           )
                           .map((cidade) => (
@@ -566,6 +704,69 @@ export const TecnicosManager = () => {
                 rows={3}
               />
             </div>
+
+            <div className="flex gap-6 pt-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="edit-supervisor"
+                  checked={formData.supervisor}
+                  onCheckedChange={(checked) => setFormData({ ...formData, supervisor: checked === true })}
+                />
+                <Label htmlFor="edit-supervisor" className="text-sm font-normal cursor-pointer">
+                  Supervisor
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="edit-coordenador"
+                  checked={formData.coordenador}
+                  onCheckedChange={(checked) => setFormData({ ...formData, coordenador: checked === true })}
+                />
+                <Label htmlFor="edit-coordenador" className="text-sm font-normal cursor-pointer">
+                  Coordenador
+                </Label>
+              </div>
+            </div>
+
+            {(formData.coordenador || formData.supervisor) && (
+              <div className="space-y-2 pt-2">
+                <Label>Áreas de Atuação (Opcional)</Label>
+                <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    {cidadesDisponiveis.map((cidade) => (
+                      <div key={cidade} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`edit-area-${cidade}`}
+                          checked={formData.areas_atuacao.includes(cidade)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setFormData({
+                                ...formData,
+                                areas_atuacao: [...formData.areas_atuacao, cidade],
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                areas_atuacao: formData.areas_atuacao.filter((c) => c !== cidade),
+                              });
+                            }
+                          }}
+                        />
+                        <Label
+                          htmlFor={`edit-area-${cidade}`}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {cidade}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Selecione as cidades adicionais que este técnico atende além da cidade principal.
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
