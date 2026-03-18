@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRealtimeExtensions } from '@/hooks/useRealtimeData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search } from 'lucide-react';
+import { Search, ChevronDown, Users, UserCog, Star, X, ChevronUp, Building2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ExtensionCard } from '@/components/ExtensionCard';
 import { NewsTicker } from '@/components/NewsTicker';
 import { getDepartamentosFromRamais, getAllDepartamentos, supabase } from '@/lib/supabase';
 import { Departamento } from '@/lib/types';
@@ -10,20 +12,11 @@ import { SupervisorsCard } from '@/components/dashboard/SupervisorsCard';
 import { DepartmentSection } from '@/components/dashboard/DepartmentSection';
 import { Footer } from '@/components/dashboard/Footer';
 import { CulturaSidebar } from '@/components/dashboard/CulturaSidebar';
-import { getIconComponent as getIcon } from '@/lib/icons';
-import { Building2 } from 'lucide-react';
+import { DepartmentCard } from '@/components/dashboard/DepartmentCard';
+import { getIconComponent } from '@/lib/icons';
 
 
 
-const getIconComponent = (iconName: string | undefined) => {
-  if (!iconName) return <Building2 className="h-5 w-5" />;
-  const IconComponent = getIcon(iconName);
-  if (typeof IconComponent === 'function' || typeof IconComponent === 'object') {
-    const Icon = IconComponent as any;
-    return <Icon className="h-5 w-5" />;
-  }
-  return <Building2 className="h-5 w-5" />;
-};
 
 const Index = () => {
   const { extensions, loading } = useRealtimeExtensions();
@@ -140,7 +133,7 @@ const Index = () => {
       <CulturaSidebar />
 
       {/* Main content shifted right */}
-      <div className="ml-[300px] flex flex-col min-h-screen">
+      <div className="ml-[360px] flex flex-col min-h-screen">
         <Header
           search={search}
           setSearch={setSearch}
@@ -192,7 +185,11 @@ const Index = () => {
                     <div key={pai.id} className="mb-6">
                       <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
                         <div style={{ color: pai.cor }}>
-                          {getIconComponent(pai.icone)}
+                          {(() => {
+                            const IconComp = getIconComponent(pai.icone) || Building2;
+                            const Icon = IconComp as any;
+                            return <Icon className="h-6 w-6" />;
+                          })()}
                         </div>
                         {pai.nome}
                       </h2>
@@ -204,25 +201,56 @@ const Index = () => {
                               (typeof ext.department === 'string' && ext.department.includes(filho.nome));
                           });
 
+                          const isExpanded = expandedDepartment === filho.id;
                           return (
-                            <div
-                              key={filho.id}
-                              className="glass-card rounded-2xl p-5 flex flex-col items-center gap-3 cursor-default hover:-translate-y-1 transition-all duration-300"
-                              style={{ borderTop: `3px solid ${filho.cor || '#6366f1'}` }}
-                            >
-                              <div
-                                className="p-3 rounded-xl"
-                                style={{ backgroundColor: `${filho.cor || '#6366f1'}18`, color: filho.cor || '#6366f1' }}
-                              >
-                                {getIconComponent(filho.icone)}
-                              </div>
-                              <div className="text-center">
-                                <p className="font-semibold text-sm text-foreground leading-tight">{filho.nome}</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  <span style={{ color: filho.cor || '#6366f1' }}>⬤</span>{' '}
-                                  {ramaisFilho.length} {ramaisFilho.length === 1 ? 'ramal' : 'ramais'}
-                                </p>
-                              </div>
+                            <div key={filho.id} className={isExpanded ? 'col-span-full' : 'col-span-1'}>
+                              <DepartmentCard 
+                                id={filho.id}
+                                nome={filho.nome}
+                                icone={filho.icone}
+                                cor={filho.cor}
+                                extensionsCount={ramaisFilho.length}
+                                isExpanded={isExpanded}
+                                onClick={toggleDepartment}
+                              />
+
+                              {isExpanded && (
+                                <div className="mt-2 animate-in slide-in-from-top-3 duration-300 fade-in">
+                                  <div className="relative rounded-2xl overflow-hidden glass-card" style={{ borderTop: `4px solid ${filho.cor || '#f1364f'}` }}>
+                                    <div className="flex items-start justify-between px-6 py-5" style={{ background: `linear-gradient(135deg, ${filho.cor}12, ${filho.cor}04)` }}>
+                                      <div className="flex items-center gap-4">
+                                        <div className="p-3 rounded-xl shadow-md" style={{ backgroundColor: `${filho.cor}18`, color: filho.cor }}>
+                                          {(() => {
+                                            const IconComp = getIconComponent(filho.icone) || Building2;
+                                            const Icon = IconComp as any;
+                                            return <Icon className="h-6 w-6" />;
+                                          })()}
+                                        </div>
+                                        <div>
+                                          <h2 className="text-xl font-bold text-foreground">{filho.nome}</h2>
+                                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground">
+                                            <Users className="h-3 w-3" />
+                                            {ramaisFilho.length} {ramaisFilho.length === 1 ? 'ramal' : 'ramais'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <Button variant="ghost" size="icon" onClick={() => toggleDepartment(filho.id)} className="h-9 w-9 rounded-xl hover:bg-red-500/10 text-muted-foreground hover:text-red-500">
+                                        <X className="h-5 w-5" />
+                                      </Button>
+                                    </div>
+                                    <div className="p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-4 border-t border-white/5">
+                                      {ramaisFilho.map((ext) => (
+                                        <ExtensionCard key={ext.id} extension={ext} showShortNumber={true} />
+                                      ))}
+                                    </div>
+                                    <div className="px-6 py-3 flex justify-center border-t border-white/5 bg-white/5">
+                                      <Button variant="ghost" size="sm" onClick={() => toggleDepartment(filho.id)} className="text-xs text-muted-foreground gap-1.5 uppercase tracking-widest font-bold">
+                                        <ChevronUp className="h-4 w-4" /> Recolher
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           );
                         })}

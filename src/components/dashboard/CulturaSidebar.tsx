@@ -11,7 +11,7 @@ const valores = [
 export const CulturaSidebar = () => {
   return (
     <aside
-        className="fixed top-0 left-0 h-full z-40 w-[300px] flex flex-col"
+        className="fixed top-0 left-0 h-full z-40 w-[360px] flex flex-col"
         style={{ background: '#0f0b2e' }}
       >
 

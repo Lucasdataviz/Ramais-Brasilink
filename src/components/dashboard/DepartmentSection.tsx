@@ -4,6 +4,7 @@ import { Building2, X, ChevronDown, ChevronUp, Users, UserCog, Star } from 'luci
 import { ExtensionCard } from '@/components/ExtensionCard';
 import { Departamento, Extension } from '@/lib/types';
 import { getIconComponent as getIcon } from '@/lib/icons';
+import { DepartmentCard } from './DepartmentCard';
 
 interface DepartmentSectionProps {
     groupedDepartments: Array<{
@@ -60,74 +61,15 @@ export const DepartmentSection = ({
                         ref={(el) => { cardRefs.current[departmentId] = el; }}
                     >
                         {/* Department Card */}
-                        {!isExpanded ? (
-                            <div
-                                className="group relative rounded-2xl overflow-hidden glass-card card-lift cursor-pointer select-none"
-                                onClick={() => toggleDepartment(departmentId)}
-                                style={{ transition: 'box-shadow 0.3s, transform 0.3s' }}
-                                onMouseEnter={e => {
-                                  (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 0 2px ${deptColor}60, 0 8px 30px ${deptColor}25`;
-                                }}
-                                onMouseLeave={e => {
-                                  (e.currentTarget as HTMLDivElement).style.boxShadow = '';
-                                }}
-                            >
-                                {/* Top gradient accent */}
-                                <div
-                                    className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-                                    style={{ background: `linear-gradient(90deg, ${deptColor}99, ${deptColor})` }}
-                                />
-
-                                {/* Clickable indicator — top right corner */}
-                                <div
-                                    className="absolute top-2.5 right-2.5 p-1 rounded-lg opacity-40 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110"
-                                    style={{ backgroundColor: `${deptColor}20`, color: deptColor }}
-                                >
-                                    <ChevronDown className="h-3.5 w-3.5 transition-transform duration-300" />
-                                </div>
-
-                                {/* Background color blob */}
-                                <div
-                                    className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-10 group-hover:opacity-25 transition-opacity duration-500 -translate-y-1/2 translate-x-1/2"
-                                    style={{ backgroundColor: deptColor }}
-                                />
-
-                                <div className="p-6 flex flex-col items-center text-center space-y-3 relative z-10">
-                                    {/* Icon container */}
-                                    <div
-                                        className="p-4 rounded-2xl shadow-lg transition-all duration-300 group-hover:scale-110"
-                                        style={{
-                                            backgroundColor: `${deptColor}18`,
-                                            color: deptColor,
-                                            boxShadow: `0 4px 20px ${deptColor}25`,
-                                        }}
-                                    >
-                                        {renderIcon()}
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <h3 className="font-bold text-sm md:text-base text-foreground line-clamp-2 leading-snug">
-                                            {departmentInfo?.nome || department}
-                                        </h3>
-                                        <div className="flex items-center justify-center gap-1.5">
-                                            <Users className="h-3 w-3 text-muted-foreground" />
-                                            <p className="text-xs text-muted-foreground font-medium">
-                                                {deptExtensions.length} {deptExtensions.length === 1 ? 'ramal' : 'ramais'}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Bottom expand hint — always slightly visible */}
-                                    <div className="flex items-center gap-1 text-xs opacity-30 group-hover:opacity-100 transition-opacity duration-300" style={{ color: deptColor }}>
-                                        <ChevronDown className="h-3 w-3" />
-                                        <span className="font-medium">Ver ramais</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            /* Compact collapsed card when another is expanded */
-                            null
-                        )}
+                        <DepartmentCard
+                            id={departmentId}
+                            nome={departmentInfo?.nome || department}
+                            icone={departmentInfo?.icone}
+                            cor={deptColor}
+                            extensionsCount={deptExtensions.length}
+                            isExpanded={isExpanded}
+                            onClick={toggleDepartment}
+                        />
 
                         {/* Expanded Panel */}
                         {isExpanded && (
