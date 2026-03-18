@@ -8,8 +8,12 @@ import { Departamento } from '@/lib/types';
 import { Header } from '@/components/dashboard/Header';
 import { SupervisorsCard } from '@/components/dashboard/SupervisorsCard';
 import { DepartmentSection } from '@/components/dashboard/DepartmentSection';
+import { Footer } from '@/components/dashboard/Footer';
+import { CulturaSidebar } from '@/components/dashboard/CulturaSidebar';
 import { getIconComponent as getIcon } from '@/lib/icons';
 import { Building2 } from 'lucide-react';
+
+
 
 const getIconComponent = (iconName: string | undefined) => {
   if (!iconName) return <Building2 className="h-5 w-5" />;
@@ -27,6 +31,10 @@ const Index = () => {
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [departamentosLoading, setDepartamentosLoading] = useState(true);
   const [expandedDepartment, setExpandedDepartment] = useState<string | null>(null);
+  const [showSupervisors, setShowSupervisors] = useState(false);
+
+  const supervisores = extensions.filter(ext => ext.metadata?.supervisor === true);
+  const coordenadores = extensions.filter(ext => ext.metadata?.coordenador === true);
 
   useEffect(() => {
     loadDepartamentos();
@@ -127,12 +135,23 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-950 dark:to-gray-900">
-      <NewsTicker />
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-50/50 dark:from-gray-950 dark:via-blue-950/20 dark:to-indigo-950/20">
+      {/* Fixed sidebar always visible */}
+      <CulturaSidebar />
 
-      <Header search={search} setSearch={setSearch} />
+      {/* Main content shifted right */}
+      <div className="ml-[300px] flex flex-col min-h-screen">
+        <Header
+          search={search}
+          setSearch={setSearch}
+          supervisorCount={supervisores.length}
+          coordenadorCount={coordenadores.length}
+          onSupervisoresClick={() => setShowSupervisors(v => !v)}
+        />
+        <NewsTicker />
 
-      <main className="container mx-auto px-4 py-8 relative">
+        <main className="w-full px-4 py-6 relative flex-1">
+
         <div
           className="fixed inset-0 opacity-[0.02] dark:opacity-[0.03] blur-sm pointer-events-none -z-10"
           style={{
@@ -144,13 +163,24 @@ const Index = () => {
         />
 
         {loading || departamentosLoading ? (
-          <div className="text-center py-16">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-500"></div>
-            <p className="text-muted-foreground mt-4">Carregando ramais...</p>
+          <div className="flex flex-col items-center justify-center py-32 gap-6">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full border-4 border-blue-100 dark:border-blue-950" />
+              <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-blue-500 animate-spin" />
+              <div className="absolute inset-2 w-12 h-12 rounded-full border-4 border-transparent border-t-indigo-400 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
+            </div>
+            <div className="text-center">
+              <p className="text-base font-semibold text-foreground">Carregando ramais...</p>
+              <p className="text-sm text-muted-foreground mt-1">Aguarde um momento</p>
+            </div>
           </div>
         ) : (
           <>
-            <SupervisorsCard extensions={filteredExtensions} />
+            {showSupervisors && (
+              <div className="mb-4 animate-in slide-in-from-top-2 duration-300">
+                <SupervisorsCard extensions={filteredExtensions} />
+              </div>
+            )}
 
             {/* Hierarchical Departments Logic */}
             {departamentosHierarquicos.length > 0 && (
@@ -166,7 +196,7 @@ const Index = () => {
                         </div>
                         {pai.nome}
                       </h2>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                         {pai.filhos.map((filho) => {
                           const ramaisFilho = extensions.filter(ext => {
                             return ext.department === filho.id ||
@@ -175,50 +205,25 @@ const Index = () => {
                           });
 
                           return (
-                            <Card
+                            <div
                               key={filho.id}
-                              className="border-2 shadow-lg hover:shadow-xl transition-shadow"
-                              style={{ borderLeftColor: filho.cor, borderLeftWidth: '4px' }}
+                              className="glass-card rounded-2xl p-5 flex flex-col items-center gap-3 cursor-default hover:-translate-y-1 transition-all duration-300"
+                              style={{ borderTop: `3px solid ${filho.cor || '#6366f1'}` }}
                             >
-                              <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                  <div
-                                    className="w-4 h-4 rounded-full shrink-0"
-                                    style={{ backgroundColor: filho.cor }}
-                                  ></div>
-                                  <div style={{ color: filho.cor }}>
-                                    {getIconComponent(filho.icone)}
-                                  </div>
-                                  <span className="truncate">{filho.nome}</span>
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <p className="text-sm text-muted-foreground mb-3">
+                              <div
+                                className="p-3 rounded-xl"
+                                style={{ backgroundColor: `${filho.cor || '#6366f1'}18`, color: filho.cor || '#6366f1' }}
+                              >
+                                {getIconComponent(filho.icone)}
+                              </div>
+                              <div className="text-center">
+                                <p className="font-semibold text-sm text-foreground leading-tight">{filho.nome}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  <span style={{ color: filho.cor || '#6366f1' }}>⬤</span>{' '}
                                   {ramaisFilho.length} {ramaisFilho.length === 1 ? 'ramal' : 'ramais'}
                                 </p>
-                                {ramaisFilho.length > 0 ? (
-                                  <div className="mt-4 space-y-2">
-                                    {ramaisFilho.slice(0, 4).map((ext) => (
-                                      <div key={ext.id} className="p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                                        <div className="flex items-center justify-between">
-                                          <span className="font-medium text-sm truncate flex-1">{ext.name}</span>
-                                          <span className="font-mono text-sm font-bold ml-2">{ext.number.slice(-4)}</span>
-                                        </div>
-                                      </div>
-                                    ))}
-                                    {ramaisFilho.length > 4 && (
-                                      <p className="text-xs text-muted-foreground text-center mt-2">
-                                        +{ramaisFilho.length - 4} mais
-                                      </p>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <p className="text-xs text-muted-foreground text-center py-4">
-                                    Nenhum ramal associado
-                                  </p>
-                                )}
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
@@ -229,30 +234,21 @@ const Index = () => {
             )}
 
             {filteredExtensions.length === 0 && search ? (
-              <Card className="border shadow-xl p-12">
-                <div className="text-center">
-                  <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-xl font-semibold text-foreground mb-2">Nenhum ramal encontrado</p>
-                  <p className="text-sm text-muted-foreground">
-                    Tente buscar com outros termos
-                  </p>
+              <div className="glass-card rounded-2xl p-16 text-center">
+                <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
+                  <Search className="h-10 w-10 text-blue-400" />
                 </div>
-              </Card>
+                <p className="text-xl font-bold text-foreground mb-2">Nenhum ramal encontrado</p>
+                <p className="text-sm text-muted-foreground">Tente buscar com outros termos</p>
+              </div>
             ) : filteredExtensions.length === 0 && !search ? (
-              <Card className="border shadow-xl p-12">
-                <div className="text-center">
-                  {/* Logo SVG Placeholder - Same as original */}
-                  <div className="flex justify-center mb-4">
-                    <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                      <Building2 className="h-8 w-8 text-slate-400" />
-                    </div>
-                  </div>
-                  <p className="text-xl font-semibold text-foreground mb-2">Nenhum ramal cadastrado</p>
-                  <p className="text-sm text-muted-foreground">
-                    Adicione ramais através do painel administrativo
-                  </p>
+              <div className="glass-card rounded-2xl p-16 text-center">
+                <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center">
+                  <Building2 className="h-10 w-10 text-slate-400" />
                 </div>
-              </Card>
+                <p className="text-xl font-bold text-foreground mb-2">Nenhum ramal cadastrado</p>
+                <p className="text-sm text-muted-foreground">Adicione ramais através do painel administrativo</p>
+              </div>
             ) : (
               <DepartmentSection
                 groupedDepartments={groupedByDepartment}
@@ -264,6 +260,8 @@ const Index = () => {
           </>
         )}
       </main>
+        <Footer />
+      </div>
     </div>
   );
 };

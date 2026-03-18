@@ -1,8 +1,7 @@
 import { Extension } from '@/lib/types';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, Copy, PhoneCall } from 'lucide-react';
+import { Phone, Copy, PhoneCall, CheckCircle2, XCircle, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ExtensionCardProps {
@@ -16,7 +15,6 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
     toast.success('Ramal copiado!');
   };
 
-  // Função para mostrar apenas os últimos 4 dígitos
   const formatNumber = (number: string) => {
     if (showShortNumber && number.length > 4) {
       return number.slice(-4);
@@ -24,126 +22,168 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
     return number;
   };
 
-  const getStatusColor = (status: string) => {
-    // Aceita tanto 'active'/'ativo' quanto 'inactive'/'inativo'
+  const getStatusConfig = (status: string) => {
     const normalizedStatus = status.toLowerCase();
-
     if (normalizedStatus === 'active' || normalizedStatus === 'ativo') {
-      return 'bg-green-500 text-white hover:bg-green-600';
+      return {
+        color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30',
+        dot: 'bg-emerald-500',
+        label: 'Ativo',
+        icon: CheckCircle2,
+        glow: 'shadow-emerald-500/10',
+        isActive: true,
+      };
     } else if (normalizedStatus === 'inactive' || normalizedStatus === 'inativo') {
-      return 'bg-gray-400 text-white';
+      return {
+        color: 'bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-500/20',
+        dot: 'bg-gray-400',
+        label: 'Inativo',
+        icon: XCircle,
+        glow: '',
+        isActive: false,
+      };
     } else if (normalizedStatus === 'maintenance' || normalizedStatus === 'manutenção') {
-      return 'bg-yellow-500 text-white';
+      return {
+        color: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30',
+        dot: 'bg-amber-500',
+        label: 'Manutenção',
+        icon: Wrench,
+        glow: 'shadow-amber-500/10',
+        isActive: false,
+      };
     }
-    return 'bg-muted text-muted-foreground';
-  };
-
-  const getStatusLabel = (status: string) => {
-    const normalizedStatus = status.toLowerCase();
-
-    if (normalizedStatus === 'active' || normalizedStatus === 'ativo') {
-      return 'Ativo';
-    } else if (normalizedStatus === 'inactive' || normalizedStatus === 'inativo') {
-      return 'Inativo';
-    } else if (normalizedStatus === 'maintenance' || normalizedStatus === 'manutenção') {
-      return 'Manutenção';
-    }
-    return status;
+    return {
+      color: 'bg-muted text-muted-foreground',
+      dot: 'bg-gray-400',
+      label: status,
+      icon: XCircle,
+      glow: '',
+      isActive: false,
+    };
   };
 
   const displayNumber = formatNumber(extension.number);
-  const fullNumber = extension.number; // Número completo para ligação
+  const statusConfig = getStatusConfig(extension.status);
+  const StatusIcon = statusConfig.icon;
 
-
-
-  // Função para fazer ligação via SIP
   const handleCall = (e: React.MouseEvent) => {
     e.stopPropagation();
-
-    // Verificar se o ramal está ativo
     const normalizedStatus = extension.status.toLowerCase();
     if (normalizedStatus !== 'active' && normalizedStatus !== 'ativo') {
       toast.error('Não é possível ligar para um ramal inativo');
       return;
     }
-
-    // Lógica para o MicroSIP: Sempre usar os últimos 4 dígitos se o número for maior que 4
-    // O usuário solicitou que fosse automático ("so com os 4 ultios nueros, uando for pro microsuip")
     const numberToCall = extension.number.length > 4
       ? extension.number.slice(-4)
       : extension.number;
-
     try {
-      // Tentar usar protocolo SIP primeiro (para softphones como MicroSIP)
-      // Formato: sip:numero@servidor ou sip:numero
       const sipUrl = `sip:${numberToCall}`;
-
-      // Criar um link temporário e clicar nele
       const link = document.createElement('a');
       link.href = sipUrl;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
       toast.success(`Iniciando ligação para ${numberToCall}...`);
-    } catch (error) {
-      // Fallback: tentar protocolo tel: (para dispositivos móveis)
+    } catch {
       try {
-        const telUrl = `tel:${numberToCall}`;
-        window.location.href = telUrl;
+        window.location.href = `tel:${numberToCall}`;
         toast.success(`Iniciando ligação para ${numberToCall}...`);
-      } catch (telError) {
-        toast.error('Erro ao iniciar ligação. Verifique se há um softphone instalado.');
-        console.error('Error making call:', telError);
+      } catch {
+        toast.error('Erro ao iniciar ligação.');
       }
     }
   };
 
   return (
-    <Card className="p-4 hover:shadow-lg transition-all border-0 shadow-md bg-white dark:bg-gray-900">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-base font-bold text-foreground truncate">
-            {extension.name}
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1 truncate">
-            {extension.metadata?.descricao || extension.department || 'Sem descrição'}
-          </p>
+    <div
+      className={`
+        group relative rounded-2xl overflow-hidden
+        glass-card card-lift cursor-default
+        ${statusConfig.isActive ? statusConfig.glow : ''}
+        transition-all duration-300
+      `}
+    >
+      {/* Colored top accent bar */}
+      <div
+        className={`absolute top-0 left-0 right-0 h-0.5 ${
+          statusConfig.isActive
+            ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400'
+            : 'bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700'
+        }`}
+      />
+
+      <div className="p-4">
+        {/* Header row */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0 pr-2">
+            <h3 className="text-sm font-bold text-foreground truncate leading-snug">
+              {extension.name}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+              {extension.metadata?.descricao || extension.department || 'Sem descrição'}
+            </p>
+          </div>
+
+          {/* Status badge */}
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${statusConfig.color}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot} ${statusConfig.isActive ? 'animate-pulse' : ''}`} />
+            {statusConfig.label}
+          </span>
         </div>
-        <Badge className={`${getStatusColor(extension.status)} ml-2 shrink-0 text-xs font-semibold`}>
-          {getStatusLabel(extension.status)}
-        </Badge>
+
+        {/* Number row */}
+        <div className={`
+          flex items-center gap-2 p-3 rounded-xl
+          ${statusConfig.isActive
+            ? 'bg-gradient-to-r from-blue-500/8 via-indigo-500/8 to-purple-500/8 dark:from-blue-500/15 dark:via-indigo-500/15 dark:to-purple-500/15 border border-blue-200/40 dark:border-blue-700/30'
+            : 'bg-muted/50 border border-border/40'
+          }
+        `}>
+          <Phone className={`h-4 w-4 shrink-0 ${statusConfig.isActive ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground'}`} />
+          <span className="text-base font-mono font-bold text-foreground flex-1 tracking-wider">
+            {displayNumber}
+          </span>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCall}
+              disabled={!statusConfig.isActive}
+              className={`
+                shrink-0 h-7 w-7 p-0 rounded-lg
+                ${statusConfig.isActive
+                  ? 'hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
+                  : 'opacity-40 cursor-not-allowed text-muted-foreground'
+                }
+                transition-all duration-200
+              `}
+              title="Ligar para este ramal"
+            >
+              <PhoneCall className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                copyToClipboard(displayNumber);
+              }}
+              className="shrink-0 h-7 w-7 p-0 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-500 dark:text-blue-400 transition-all duration-200"
+              title="Copiar ramal"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border border-blue-200/50 dark:border-blue-800/50">
-        <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-        <span className="text-lg font-mono font-bold text-foreground flex-1">
-          {displayNumber}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleCall}
-          disabled={extension.status.toLowerCase() !== 'active' && extension.status.toLowerCase() !== 'ativo'}
-          className="shrink-0 h-8 w-8 p-0 hover:bg-green-100 dark:hover:bg-green-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Ligar para este ramal"
-        >
-          <PhoneCall className="h-4 w-4 text-green-600 dark:text-green-400" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            copyToClipboard(displayNumber);
-          }}
-          className="shrink-0 h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/30"
-          title="Copiar ramal"
-        >
-          <Copy className="h-4 w-4" />
-        </Button>
+      {/* Hover shimmer overlay */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent" />
       </div>
-    </Card>
+    </div>
   );
 };
