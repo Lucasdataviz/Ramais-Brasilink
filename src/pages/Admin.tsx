@@ -10,7 +10,8 @@ import { UsersManager } from '@/components/admin/UsersManager';
 import { DepartamentosManager } from '@/components/admin/DepartamentosManager';
 import { TecnicosManager } from '@/components/admin/TecnicosManager';
 import { IPsManager } from '@/components/admin/IPsManager';
-import { LogOut, Home, Settings, Phone, FileText, UserCircle, Building2, Wrench, Network, LayoutDashboard, Shield, ChevronRight } from 'lucide-react';
+import { QueuesManager } from '@/components/admin/QueuesManager';
+import { LogOut, Home, Settings, Phone, FileText, UserCircle, Building2, Wrench, Network, LayoutDashboard, Shield, ChevronRight, PhoneForwarded } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { toast } from 'sonner';
@@ -66,6 +67,7 @@ export default function Admin() {
     { id: 'ramais', label: 'Ramais', icon: Phone, category: 'Telefonia' },
     { id: 'departamentos', label: 'Departamentos', icon: Building2, category: 'Telefonia' },
     { id: 'tecnicos', label: 'Técnicos', icon: Wrench, category: 'Telefonia' },
+    { id: 'filas', label: 'Filas', icon: PhoneForwarded, category: 'Telefonia' },
     { id: 'users', label: 'Usuários', icon: UserCircle, category: 'Sistema' },
     { id: 'ips', label: 'IPs Permitidos', icon: Network, category: 'Sistema' },
     { id: 'logs', label: 'Auditoria', icon: FileText, category: 'Sistema' },
@@ -171,6 +173,7 @@ export default function Admin() {
               {activeTab === 'ramais' && 'Gerenciamento completo de ramais'}
               {activeTab === 'departamentos' && 'Organização estrutural da empresa'}
               {activeTab === 'tecnicos' && 'Controle de equipe técnica'}
+              {activeTab === 'filas' && 'Gerenciamento de filas de atendimento'}
               {activeTab === 'users' && 'Administração de acessos'}
               {activeTab === 'ips' && 'Segurança e controle de rede'}
               {activeTab === 'logs' && 'Histórico de atividades'}
@@ -194,6 +197,7 @@ export default function Admin() {
             {activeTab === 'ramais' && <RamaisManager />}
             {activeTab === 'departamentos' && <DepartamentosManager />}
             {activeTab === 'tecnicos' && <TecnicosManager />}
+            {activeTab === 'filas' && <QueuesManager />}
             {activeTab === 'users' && <UsersManager />}
             {activeTab === 'ips' && <IPsManager />}
             {activeTab === 'logs' && (

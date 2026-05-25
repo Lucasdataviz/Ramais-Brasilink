@@ -9,6 +9,7 @@ import { getDepartamentosFromRamais, getAllDepartamentos, supabase } from '@/lib
 import { Departamento } from '@/lib/types';
 import { Header } from '@/components/dashboard/Header';
 import { SupervisorsCard } from '@/components/dashboard/SupervisorsCard';
+import { QueuesCard } from '@/components/dashboard/QueuesCard';
 import { DepartmentSection } from '@/components/dashboard/DepartmentSection';
 import { Footer } from '@/components/dashboard/Footer';
 import { CulturaSidebar } from '@/components/dashboard/CulturaSidebar';
@@ -25,6 +26,7 @@ const Index = () => {
   const [departamentosLoading, setDepartamentosLoading] = useState(true);
   const [expandedDepartment, setExpandedDepartment] = useState<string | null>(null);
   const [showSupervisors, setShowSupervisors] = useState(false);
+  const [showQueues, setShowQueues] = useState(false);
 
   const supervisores = extensions.filter(ext => ext.metadata?.supervisor === true);
   const coordenadores = extensions.filter(ext => ext.metadata?.coordenador === true);
@@ -140,6 +142,8 @@ const Index = () => {
           supervisorCount={supervisores.length}
           coordenadorCount={coordenadores.length}
           onSupervisoresClick={() => setShowSupervisors(v => !v)}
+          onQueuesClick={() => setShowQueues(v => !v)}
+          showQueues={showQueues}
         />
         <NewsTicker />
 
@@ -169,6 +173,12 @@ const Index = () => {
           </div>
         ) : (
           <>
+            {showQueues && (
+              <div className="mb-4 animate-in slide-in-from-top-2 duration-300">
+                <QueuesCard />
+              </div>
+            )}
+
             {showSupervisors && (
               <div className="mb-4 animate-in slide-in-from-top-2 duration-300">
                 <SupervisorsCard extensions={filteredExtensions} />

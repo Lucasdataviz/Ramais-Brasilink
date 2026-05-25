@@ -360,4 +360,82 @@ export const initializeSeedData = (): void => {
     };
     setAdminUsers([adminUser]);
   }
+
+  // Seed queues if empty
+  if (getQueues().length === 0) {
+    const defaultQueues: Queue[] = [
+      {
+        id: generateId(),
+        name: '7001 — Comercial',
+        description: 'Fila Comercial',
+        color: '#3b82f6',
+        icon: 'phone',
+        order_index: 1,
+        created_at: now(),
+        updated_at: now(),
+      },
+      {
+        id: generateId(),
+        name: '7002 — Ouvidoria',
+        description: 'Fila Ouvidoria',
+        color: '#10b981',
+        icon: 'phone',
+        order_index: 2,
+        created_at: now(),
+        updated_at: now(),
+      },
+      {
+        id: generateId(),
+        name: '7003 — SAC',
+        description: 'Fila SAC',
+        color: '#f59e0b',
+        icon: 'phone',
+        order_index: 3,
+        created_at: now(),
+        updated_at: now(),
+      },
+      {
+        id: generateId(),
+        name: '7004 — Corporativo',
+        description: 'Fila Corporativo',
+        color: '#f1364f',
+        icon: 'phone',
+        order_index: 4,
+        created_at: now(),
+        updated_at: now(),
+      },
+      {
+        id: generateId(),
+        name: '7005 — Cobrança',
+        description: 'Fila Cobrança',
+        color: '#6366f1',
+        icon: 'phone',
+        order_index: 5,
+        created_at: now(),
+        updated_at: now(),
+      },
+      {
+        id: generateId(),
+        name: '7006 — Oculta Técnicos',
+        description: 'Fila Oculta Técnicos',
+        color: '#6b7280',
+        icon: 'phone',
+        order_index: 6,
+        created_at: now(),
+        updated_at: now(),
+      },
+      {
+        id: generateId(),
+        name: '9999 — Upcall',
+        description: 'Fila Upcall',
+        color: '#ec4899',
+        icon: 'phone',
+        order_index: 7,
+        created_at: now(),
+        updated_at: now(),
+      },
+    ];
+    setQueues(defaultQueues);
+  }
 };
+

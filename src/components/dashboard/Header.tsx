@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Wrench, ExternalLink, Search, Lock, X, Users } from 'lucide-react';
+import { Wrench, ExternalLink, Search, Lock, X, Users, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface HeaderProps {
@@ -10,9 +10,19 @@ interface HeaderProps {
   supervisorCount?: number;
   coordenadorCount?: number;
   onSupervisoresClick?: () => void;
+  onQueuesClick?: () => void;
+  showQueues?: boolean;
 }
 
-export const Header = ({ search, setSearch, supervisorCount = 0, coordenadorCount = 0, onSupervisoresClick }: HeaderProps) => {
+export const Header = ({
+  search,
+  setSearch,
+  supervisorCount = 0,
+  coordenadorCount = 0,
+  onSupervisoresClick,
+  onQueuesClick,
+  showQueues = false,
+}: HeaderProps) => {
   const total = supervisorCount + coordenadorCount;
 
   return (
@@ -70,9 +80,25 @@ export const Header = ({ search, setSearch, supervisorCount = 0, coordenadorCoun
                 {supervisorCount > 0 && coordenadorCount > 0 && ' · '}
                 {coordenadorCount > 0 && `${coordenadorCount} coord.`}
               </span>
-              <span className="lg:hidden">{total}</span>
             </button>
           )}
+
+          {/* ── Filas badge ── */}
+          <button
+            onClick={onQueuesClick}
+            className="hidden md:flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-semibold transition-all duration-200 shrink-0"
+            style={{
+              background: showQueues ? 'rgba(241, 54, 79, 0.22)' : 'rgba(241, 54, 79, 0.12)',
+              border: showQueues ? '1px solid rgba(241, 54, 79, 0.45)' : '1px solid rgba(241, 54, 79, 0.22)',
+              color: '#fca5a5',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(241, 54, 79, 0.22)')}
+            onMouseLeave={e => (e.currentTarget.style.background = showQueues ? 'rgba(241, 54, 79, 0.22)' : 'rgba(241, 54, 79, 0.12)')}
+            title="Ver Filas de Atendimento"
+          >
+            <Layers className="h-3.5 w-3.5" style={{ color: '#f1364f' }} />
+            <span>Filas</span>
+          </button>
 
           {/* ── Spacer ── */}
           <div className="flex-1" />
