@@ -1,6 +1,4 @@
 import { Extension } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Phone, Copy, PhoneCall, CheckCircle2, XCircle, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -10,9 +8,12 @@ interface ExtensionCardProps {
 }
 
 export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionCardProps) => {
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Ramal copiado!');
+  const copyToClipboard = (number: string) => {
+    navigator.clipboard.writeText(number);
+    toast.success(`Ramal copiado: ${number}`, {
+      description: extension.name,
+      duration: 2000,
+    });
   };
 
   const formatNumber = (number: string) => {
@@ -23,63 +24,73 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
   };
 
   const getStatusConfig = (status: string) => {
-    const normalizedStatus = status.toLowerCase();
-    if (normalizedStatus === 'active' || normalizedStatus === 'ativo') {
+    const s = status.toLowerCase();
+    if (s === 'active' || s === 'ativo') {
       return {
-        color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30',
-        dot: 'bg-emerald-500',
         label: 'Ativo',
-        icon: CheckCircle2,
-        glow: 'shadow-emerald-500/10',
+        dot: 'bg-emerald-400',
+        pill: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20',
+        accent: 'from-emerald-400 to-teal-400',
+        numberBg: 'bg-blue-50/80 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20',
+        numberText: 'text-blue-700 dark:text-blue-300',
+        phoneIcon: 'text-blue-500',
+        callBtn: 'hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        avatarBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+        PhoneIcon: PhoneCall,
         isActive: true,
       };
-    } else if (normalizedStatus === 'inactive' || normalizedStatus === 'inativo') {
+    } else if (s === 'maintenance' || s === 'manutenção') {
       return {
-        color: 'bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-500/20',
-        dot: 'bg-gray-400',
-        label: 'Inativo',
-        icon: XCircle,
-        glow: '',
-        isActive: false,
-      };
-    } else if (normalizedStatus === 'maintenance' || normalizedStatus === 'manutenção') {
-      return {
-        color: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30',
-        dot: 'bg-amber-500',
         label: 'Manutenção',
-        icon: Wrench,
-        glow: 'shadow-amber-500/10',
+        dot: 'bg-amber-400',
+        pill: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20',
+        accent: 'from-amber-400 to-orange-400',
+        numberBg: 'bg-muted/60 border-border/40',
+        numberText: 'text-muted-foreground',
+        phoneIcon: 'text-amber-400',
+        callBtn: 'opacity-40 cursor-not-allowed text-muted-foreground',
+        avatarBg: 'bg-gradient-to-br from-amber-400 to-orange-500',
+        PhoneIcon: Phone,
         isActive: false,
       };
     }
+    // inactive / default
     return {
-      color: 'bg-muted text-muted-foreground',
+      label: 'Inativo',
       dot: 'bg-gray-400',
-      label: status,
-      icon: XCircle,
-      glow: '',
+      pill: 'bg-gray-100 text-gray-500 ring-gray-200 dark:bg-gray-700/40 dark:text-gray-400 dark:ring-gray-600/30',
+      accent: 'from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700',
+      numberBg: 'bg-muted/60 border-border/40',
+      numberText: 'text-muted-foreground',
+      phoneIcon: 'text-gray-400',
+      callBtn: 'opacity-40 cursor-not-allowed text-muted-foreground',
+      avatarBg: 'bg-gradient-to-br from-gray-400 to-gray-500',
+      PhoneIcon: Phone,
       isActive: false,
     };
   };
 
   const displayNumber = formatNumber(extension.number);
-  const statusConfig = getStatusConfig(extension.status);
-  const StatusIcon = statusConfig.icon;
+  const cfg = getStatusConfig(extension.status);
+
+  // Initials from name
+  const initials = extension.name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('');
 
   const handleCall = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const normalizedStatus = extension.status.toLowerCase();
-    if (normalizedStatus !== 'active' && normalizedStatus !== 'ativo') {
+    if (!cfg.isActive) {
       toast.error('Não é possível ligar para um ramal inativo');
       return;
     }
-    const numberToCall = extension.number.length > 4
-      ? extension.number.slice(-4)
-      : extension.number;
+    const numberToCall = extension.number.length > 4 ? extension.number.slice(-4) : extension.number;
     try {
-      const sipUrl = `sip:${numberToCall}`;
       const link = document.createElement('a');
-      link.href = sipUrl;
+      link.href = `sip:${numberToCall}`;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
@@ -96,86 +107,91 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
   };
 
   return (
-    <div
-      className={`
-        group relative rounded-2xl overflow-hidden
-        glass-card card-lift cursor-default
-        ${statusConfig.isActive ? statusConfig.glow : ''}
-        transition-all duration-300
-      `}
-    >
-      {/* Colored top accent bar */}
-      <div
-        className={`absolute top-0 left-0 right-0 h-0.5 ${
-          statusConfig.isActive
-            ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400'
-            : 'bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700'
-        }`}
-      />
+    <div className="group relative rounded-2xl overflow-hidden glass-card card-lift cursor-default transition-all duration-300">
+      {/* Top accent bar */}
+      <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${cfg.accent}`} />
 
-      <div className="p-4">
-        {/* Header row */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1 min-w-0 pr-2">
-            <h3 className="text-sm font-bold text-foreground truncate leading-snug">
+      <div className="px-4 pt-5 pb-4 flex flex-col gap-3">
+
+        {/* ── Row 1: Avatar + Name/Desc + Status ── */}
+        <div className="flex items-center gap-3">
+          {/* Avatar */}
+          <div
+            className={`
+              shrink-0 w-10 h-10 rounded-xl flex items-center justify-center
+              text-white text-sm font-bold shadow-md select-none
+              ${cfg.avatarBg}
+              ${cfg.isActive ? 'shadow-blue-200 dark:shadow-blue-900/50' : 'opacity-70'}
+            `}
+          >
+            {initials || <Phone className="h-4 w-4" />}
+          </div>
+
+          {/* Name + description */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-foreground leading-tight truncate">
               {extension.name}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 truncate leading-tight">
               {extension.metadata?.descricao || extension.department || 'Sem descrição'}
             </p>
           </div>
 
-          {/* Status badge */}
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${statusConfig.color}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot} ${statusConfig.isActive ? 'animate-pulse' : ''}`} />
-            {statusConfig.label}
+          {/* Status pill */}
+          <span
+            className={`
+              shrink-0 inline-flex items-center gap-1 px-2 py-0.5
+              rounded-full text-[10px] font-semibold ring-1 ring-inset
+              ${cfg.pill}
+            `}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${cfg.isActive ? 'animate-pulse' : ''}`} />
+            {cfg.label}
           </span>
         </div>
 
-        {/* Number row */}
-        <div className={`
-          flex items-center gap-2 p-3 rounded-xl
-          ${statusConfig.isActive
-            ? 'bg-gradient-to-r from-blue-500/8 via-indigo-500/8 to-purple-500/8 dark:from-blue-500/15 dark:via-indigo-500/15 dark:to-purple-500/15 border border-blue-200/40 dark:border-blue-700/30'
-            : 'bg-muted/50 border border-border/40'
-          }
-        `}>
-          <Phone className={`h-4 w-4 shrink-0 ${statusConfig.isActive ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground'}`} />
-          <span className="text-base font-mono font-bold text-foreground flex-1 tracking-wider">
+        {/* ── Row 2: Phone number block ── */}
+        <div
+          className={`
+            flex items-center gap-2 px-3 py-2.5 rounded-xl border
+            ${cfg.numberBg}
+          `}
+        >
+          <cfg.PhoneIcon className={`h-3.5 w-3.5 shrink-0 ${cfg.phoneIcon}`} />
+          <span className={`flex-1 font-mono font-bold text-base tracking-widest ${cfg.numberText}`}>
             {displayNumber}
           </span>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
+          <div className="flex items-center gap-0.5">
+            {/* Call */}
+            <button
               onClick={handleCall}
-              disabled={!statusConfig.isActive}
-              className={`
-                shrink-0 h-7 w-7 p-0 rounded-lg
-                ${statusConfig.isActive
-                  ? 'hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
-                  : 'opacity-40 cursor-not-allowed text-muted-foreground'
-                }
-                transition-all duration-200
-              `}
+              disabled={!cfg.isActive}
               title="Ligar para este ramal"
+              className={`
+                h-7 w-7 flex items-center justify-center rounded-lg
+                transition-all duration-200
+                ${cfg.callBtn}
+                ${cfg.isActive ? 'hover:scale-110' : ''}
+              `}
             >
               <PhoneCall className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                copyToClipboard(displayNumber);
-              }}
-              className="shrink-0 h-7 w-7 p-0 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-500 dark:text-blue-400 transition-all duration-200"
+            </button>
+
+            {/* Copy */}
+            <button
+              onClick={(e) => { e.stopPropagation(); copyToClipboard(displayNumber); }}
               title="Copiar ramal"
+              className="
+                h-7 w-7 flex items-center justify-center rounded-lg
+                text-muted-foreground hover:text-blue-500
+                hover:bg-blue-50 dark:hover:bg-blue-500/10
+                transition-all duration-200 hover:scale-110
+              "
             >
               <Copy className="h-3.5 w-3.5" />
-            </Button>
+            </button>
           </div>
         </div>
       </div>

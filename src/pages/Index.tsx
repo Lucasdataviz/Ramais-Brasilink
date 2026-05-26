@@ -12,7 +12,7 @@ import { SupervisorsCard } from '@/components/dashboard/SupervisorsCard';
 import { QueuesCard } from '@/components/dashboard/QueuesCard';
 import { DepartmentSection } from '@/components/dashboard/DepartmentSection';
 import { Footer } from '@/components/dashboard/Footer';
-import { CulturaSidebar } from '@/components/dashboard/CulturaSidebar';
+
 import { DepartmentCard } from '@/components/dashboard/DepartmentCard';
 import { getIconComponent } from '@/lib/icons';
 
@@ -131,11 +131,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-50/50 dark:from-gray-950 dark:via-blue-950/20 dark:to-indigo-950/20">
-      {/* Fixed sidebar always visible */}
-      <CulturaSidebar />
-
-      {/* Main content shifted right */}
-      <div className="ml-[360px] flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen">
         <Header
           search={search}
           setSearch={setSearch}
