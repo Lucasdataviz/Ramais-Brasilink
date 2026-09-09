@@ -94,7 +94,7 @@ pip3 install requests pyyaml
 
 # 2. Configurar variáveis
 export SUPABASE_URL="https://zamksbryvuuaxxwszdgc.supabase.co"
-export SUPABASE_ANON_KEY="sua_chave_aqui"
+export SUPABASE_SERVICE_ROLE_KEY="sua_chave_aqui"
 export TRAEFIK_DYNAMIC_CONFIG_PATH="/data/coolify/proxy/traefik/dynamic/ipwhitelist.yml"
 export COOLIFY_PROXY_PATH="/data/coolify/proxy"
 
@@ -113,7 +113,7 @@ sudo crontab -e
 
 Adicione:
 ```cron
-*/5 * * * * export SUPABASE_URL="..." && export SUPABASE_ANON_KEY="..." && /usr/bin/python3 /caminho/para/update_traefik_ips.py >> /var/log/traefik-ips-update.log 2>&1
+*/5 * * * * export SUPABASE_URL="..." && export SUPABASE_SERVICE_ROLE_KEY="..." && /usr/bin/python3 /caminho/para/update_traefik_ips.py >> /var/log/traefik-ips-update.log 2>&1
 ```
 
 ---

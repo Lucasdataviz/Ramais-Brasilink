@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AdminUser, UserSipConfig, UserRole, Departamento } from '@/lib/types';
+import { AdminUser, UserRole, Departamento } from '@/lib/types';
 import { 
   getUsuariosTelefonia, 
   createUsuarioTelefonia, 

@@ -40,7 +40,7 @@ export const Footer = () => {
               <div className="p-2.5 rounded-xl bg-[#f1364f]/10 border border-[#f1364f]/15 text-[#f1364f] mb-3">
                 <Target className="h-5 w-5" />
               </div>
-              <h3 className="text-sm font-bold text-foreground mb-2">Missão</h3>
+              <h3 className="font-display text-sm font-semibold text-foreground mb-2">Missão</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Conectar pessoas e negócios por meio de um hub de soluções digitais, que entrega{' '}
                 <span className="font-semibold text-[#f1364f]">inovação</span>,
@@ -62,7 +62,7 @@ export const Footer = () => {
               <div className="p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/15 text-violet-500 mb-3">
                 <Eye className="h-5 w-5" />
               </div>
-              <h3 className="text-sm font-bold text-foreground mb-2">Visão</h3>
+              <h3 className="font-display text-sm font-semibold text-foreground mb-2">Visão</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Presente conectado, onde{' '}
                 <span className="font-semibold text-violet-500">tecnologia</span>,{' '}
@@ -86,7 +86,7 @@ export const Footer = () => {
               <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/15 text-emerald-500 mb-3">
                 <Heart className="h-5 w-5" />
               </div>
-              <h3 className="text-sm font-bold text-foreground mb-2">Valores</h3>
+              <h3 className="font-display text-sm font-semibold text-foreground mb-2">Valores</h3>
               <div className="flex flex-wrap gap-2 justify-center">
                 {valores.map(({ label, icon: Icon, color }) => (
                   <span

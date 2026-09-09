@@ -1,73 +1,66 @@
-# Welcome to your Lovable project
+# Ramais Brasilink
 
-## Project info
+Sistema interno para gerenciar ramais telefônicos, departamentos, técnicos e filas de atendimento da Brasilink, com um dashboard público de consulta e um painel administrativo.
 
-**URL**: https://lovable.dev/projects/c2b51ba7-2e92-4fe9-8438-5431980b1bf4
+## Stack
 
-## How can I edit this code?
+- **Frontend:** Vite, React, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend:** Supabase (PostgreSQL, Realtime, RPC)
+- **Deploy:** Docker + Coolify (proxy reverso via Traefik)
 
-There are several ways of editing your application.
+## Rodando localmente
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/c2b51ba7-2e92-4fe9-8438-5431980b1bf4) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm install
+npm run dev          # servidor de desenvolvimento
+npm run build        # build de produção (saída em dist/)
+npm run preview      # preview do build de produção
+npm run lint          # linter
 ```
 
-**Edit a file directly in GitHub**
+Crie um `.env` na raiz com:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```env
+VITE_SUPABASE_URL=https://<seu-projeto>.supabase.co
+VITE_SUPABASE_ANON_KEY=<sua_anon_key>
+```
 
-**Use GitHub Codespaces**
+## Estrutura
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+src/
+├── components/
+│   ├── admin/      # telas do painel administrativo
+│   ├── dashboard/  # Header, Footer, cards do dashboard público
+│   └── ui/         # componentes shadcn/ui
+├── pages/          # Index (dashboard), Admin, AdminLogin, Tecnicos
+├── lib/            # cliente Supabase, tipos, utilitários
+└── hooks/          # hooks (dados em tempo real, etc.)
 
-## What technologies are used for this project?
+scripts/
+├── migrations/     # migrações SQL (rodar sql_security_hardening.sql é obrigatório)
+├── seeds/          # dados iniciais
+├── fixes/          # correções pontuais de schema
+└── server/         # automação de servidor (whitelist de IP via Traefik)
+```
 
-This project is built with:
+## Banco de dados
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+O schema e as políticas de segurança (RLS, sessões de admin, hash de senha) vivem em `scripts/`. Veja `scripts/README.md` para a ordem de execução — em particular, **`scripts/migrations/sql_security_hardening.sql` precisa estar aplicado** antes de usar o sistema em produção; sem ele, o login e o controle de acesso não funcionam como esperado.
 
-## How can I deploy this project?
+## Deploy
 
-Simply open [Lovable](https://lovable.dev/projects/c2b51ba7-2e92-4fe9-8438-5431980b1bf4) and click on Share -> Publish.
+A aplicação sobe via Docker (`Dockerfile`) atrás do Coolify, que usa **Traefik** como proxy reverso — não Nginx puro. O `nginx.conf` do container só serve os arquivos estáticos e cabeçalhos de segurança; a whitelist de IP é feita por labels do Traefik, geradas a partir da tabela `ips_permitidos` (ver `scripts/server/TRAEFIK_SETUP.md`).
 
-## Can I connect a custom domain to my Lovable project?
+Variáveis de ambiente no Coolify:
 
-Yes, you can!
+```env
+VITE_SUPABASE_URL=https://<seu-projeto>.supabase.co
+VITE_SUPABASE_ANON_KEY=<sua_anon_key>
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Para a automação de IP (`scripts/server/update_traefik_ips.py`), use a variável de servidor `SUPABASE_SERVICE_ROLE_KEY` (não a anon key) — a tabela `ips_permitidos` não é pública.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Histórico
+
+Ver `CHANGELOG.md`.

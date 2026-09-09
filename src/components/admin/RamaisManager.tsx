@@ -37,7 +37,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Ramal, Departamento } from '@/lib/types';
 import {
-  getRamais, deleteRamal, updateRamal, createRamal, getDepartamentosFromRamais,
+  getRamaisCompleto, deleteRamal, updateRamal, createRamal, getDepartamentosFromRamais,
   criarNotificacaoRamalCriado, criarNotificacaoRamalAtualizado
 } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -122,7 +122,7 @@ export const RamaisManager = () => {
     try {
       setLoading(true);
       const [ramaisData, deptData] = await Promise.all([
-        getRamais(),
+        getRamaisCompleto(),
         getDepartamentosFromRamais()
       ]);
       setRamais(ramaisData);

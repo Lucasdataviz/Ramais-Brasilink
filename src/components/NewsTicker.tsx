@@ -33,34 +33,32 @@ export const NewsTicker = () => {
 
   if (notificacoes.length === 0) return null;
 
-  const getTipoColor = () => {
-    // Usar cor baseada na primeira notificação (mais recente)
+  // Uma faixa neutra e discreta — o tipo da notificação vira só um
+  // acento no ícone, não uma cor de fundo diferente a cada troca.
+  const getTipoAccent = () => {
     const primeiroTipo = notificacoes[0]?.tipo || 'ramal_atualizado';
     switch (primeiroTipo) {
       case 'ramal_criado':
-        return 'from-green-500 via-emerald-500 to-green-600';
-      case 'ramal_atualizado':
-        return 'from-blue-500 via-cyan-500 to-blue-600';
-      case 'departamento_criado':
-        return 'from-purple-500 via-pink-500 to-purple-600';
       case 'tecnico_criado':
-        return 'from-teal-500 via-cyan-500 to-teal-600';
-      case 'tecnico_atualizado':
-        return 'from-indigo-500 via-blue-500 to-indigo-600';
+        return 'text-emerald-400';
+      case 'departamento_criado':
+        return 'text-violet-400';
       case 'mudancas_multiplas':
-        return 'from-amber-500 via-orange-500 to-amber-600';
+        return 'text-amber-400';
       default:
-        return 'from-orange-500 via-red-500 to-orange-600';
+        return 'text-primary';
     }
   };
+
+  const accent = getTipoAccent();
 
   // Se houver apenas 1 notificação, exibe estático
   if (notificacoes.length === 1) {
     return (
-      <div className={`bg-gradient-to-r ${getTipoColor()} text-white shadow-lg border-b-2 border-white/20`}>
-        <div className="w-full flex items-center justify-center py-2 px-4">
-          {/* Static centered message */}
-          <span className="font-bold text-sm md:text-base text-center">
+      <div className="bg-[#0b1220] border-b border-white/[0.06]">
+        <div className="w-full flex items-center justify-center gap-2 py-2 px-4">
+          <Bell className={`h-3.5 w-3.5 shrink-0 ${accent}`} />
+          <span className="font-medium text-sm text-white/90 text-center">
             {notificacoes[0].mensagem}
           </span>
         </div>
@@ -70,34 +68,25 @@ export const NewsTicker = () => {
 
   // Se houver mais de 1, prepara o ticker
   const mensagens = notificacoes.map(n => n.mensagem).join(" • ");
-  // Espaço para separar no loop
-  const espaco = "\u00A0\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0\u00A0";
+  const espaco = "    •    ";
   const displayContent = `${mensagens}${espaco}${mensagens}${espaco}`;
 
   return (
-    <div className={`bg-gradient-to-r ${getTipoColor()} text-white overflow-hidden relative shadow-lg border-b-2 border-white/20`}>
-      <div className="relative">
-        {/* Efeito de brilho animado */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
+    <div className="bg-[#0b1220] border-b border-white/[0.06] overflow-hidden relative">
+      <div className="flex items-center gap-4 py-2 px-4 w-full">
+        <div className={`flex items-center gap-2 shrink-0 px-2.5 py-1 bg-white/[0.06] rounded-full border border-white/[0.08] ${accent}`}>
+          <Bell className="h-3.5 w-3.5" />
+          <span className="font-semibold text-[10px] uppercase tracking-wider text-white/70">
+            Novidades
+          </span>
+        </div>
 
-        <div className="flex items-center gap-4 py-2 px-4 relative z-10 w-full">
-          {/* Badge de Notícias - Restored but simplified */}
-          <div className="flex items-center gap-2 shrink-0 px-3 py-1 bg-black/20 backdrop-blur-sm rounded-full border border-white/20 shadow-sm z-20">
-            <Bell className="h-3.5 w-3.5" />
-            <span className="font-bold text-[10px] uppercase tracking-wider">
-              NOTÍCIAS
-            </span>
-          </div>
+        <div className="h-4 w-px bg-white/[0.1] shrink-0" />
 
-          {/* Separador */}
-          <div className="h-5 w-0.5 bg-white/40 z-20"></div>
-
-          {/* Ticker com scroll contínuo */}
-          <div className="flex-1 overflow-hidden relative h-6">
-            <div className="ticker-wrapper">
-              <div className="ticker-content font-medium text-sm md:text-base whitespace-nowrap">
-                {displayContent}
-              </div>
+        <div className="flex-1 overflow-hidden relative h-5">
+          <div className="ticker-wrapper">
+            <div className="ticker-content font-medium text-sm text-white/85 whitespace-nowrap">
+              {displayContent}
             </div>
           </div>
         </div>
@@ -114,13 +103,13 @@ export const NewsTicker = () => {
           display: flex;
           align-items: center;
         }
-        
+
         .ticker-content {
           display: inline-block;
           will-change: transform;
           animation: ticker-scroll ${Math.max(30, notificacoes.length * 15)}s linear infinite;
         }
-        
+
         @keyframes ticker-scroll {
           0% {
             transform: translateX(0);
@@ -128,18 +117,6 @@ export const NewsTicker = () => {
           100% {
             transform: translateX(-50%);
           }
-        }
-        
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        .animate-shimmer {
-          animation: shimmer 3s infinite;
         }
       `}</style>
     </div>

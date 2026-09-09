@@ -15,6 +15,7 @@ import { LogOut, Home, Settings, Phone, FileText, UserCircle, Building2, Wrench,
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { toast } from 'sonner';
+import { validateSession, logoutAdmin } from '@/lib/supabase';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -29,12 +30,22 @@ export default function Admin() {
   const checkSession = async () => {
     try {
       const storedUser = localStorage.getItem('current_user');
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
-      } else {
+      if (!storedUser) {
         navigate('/admin/login');
+        return;
       }
+
+      // Não basta ter algo no localStorage (qualquer um pode forjar isso no
+      // console do navegador) - confirmamos no banco que o token de sessão
+      // ainda é válido antes de liberar o painel.
+      const isValid = await validateSession();
+      if (!isValid) {
+        localStorage.removeItem('current_user');
+        navigate('/admin/login');
+        return;
+      }
+
+      setUser(JSON.parse(storedUser));
     } catch (error) {
       console.error('Error checking session:', error);
       navigate('/admin/login');
@@ -43,7 +54,8 @@ export default function Admin() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutAdmin();
     localStorage.removeItem('current_user');
     toast.success('Logout realizado com sucesso!');
     navigate('/admin/login');
@@ -53,7 +65,7 @@ export default function Admin() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-slate-500">Carregando painel...</p>
         </div>
       </div>
@@ -83,11 +95,11 @@ export default function Admin() {
         {/* Brand Header */}
         <div className="p-6 pb-2">
           <div className="flex items-center gap-3 mb-8">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
               <Shield className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="font-bold text-xl text-white tracking-tight">Admin<span className="text-blue-400">Panel</span></h1>
+              <h1 className="font-display font-semibold text-xl text-white tracking-tight">Admin<span className="text-primary">Panel</span></h1>
               <p className="text-xs text-slate-400 font-medium">Gestão Corporativa</p>
             </div>
           </div>
@@ -112,11 +124,11 @@ export default function Admin() {
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative",
                         isActive
-                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/10"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
                           : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                       )}
                     >
-                      <Icon className={cn("h-4 w-4", isActive ? "text-white" : "text-slate-400 group-hover:text-blue-400")} />
+                      <Icon className={cn("h-4 w-4", isActive ? "text-primary-foreground" : "text-slate-400 group-hover:text-primary")} />
                       <span>{item.label}</span>
                       {isActive && (
                         <ChevronRight className="h-3 w-3 absolute right-3 opacity-50" />
@@ -159,11 +171,11 @@ export default function Admin() {
         {/* Top Header */}
         <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
           <div className="flex flex-col">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <h2 className="font-display text-xl font-semibold text-slate-800 dark:text-white flex items-center gap-2">
               {menuItems.find(i => i.id === activeTab)?.icon && (
                 (() => {
                   const Icon = menuItems.find(i => i.id === activeTab)!.icon;
-                  return <Icon className="h-5 w-5 text-blue-600" />;
+                  return <Icon className="h-5 w-5 text-primary" />;
                 })()
               )}
               {menuItems.find(i => i.id === activeTab)?.label}
@@ -181,7 +193,7 @@ export default function Admin() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 gap-2">
+            <Button variant="ghost" size="sm" asChild className="text-slate-500 hover:text-primary hover:bg-primary/10 gap-2">
               <Link to="/">
                 <Home className="h-4 w-4" />
                 <span>Ir para Site</span>

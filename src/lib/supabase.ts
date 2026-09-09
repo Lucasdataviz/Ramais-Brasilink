@@ -1,10 +1,46 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AdminUser, Ramal, Departamento, UsuarioTelefonia, NumeroTecnico, Notificacao, IPPermitido, UserRole } from './types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zamksbryvuuaxxwszdgc.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphbWtzYnJ5dnV1YXh4d3N6ZGdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4OTA2NTUsImV4cCI6MjA2MDQ2NjY1NX0.KKcW7dlvWHBwT7dnKmeDNwTIjK2chWkgCMvGYhghOkY';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// ========================================
+// SESSÃO DE ADMIN
+// ========================================
+// Toda ação administrativa (criar/editar/excluir ramal, usuário, IP, etc.)
+// exige um token de sessão válido, emitido pela função `login_admin` no
+// banco e validado no backend a cada chamada (tabela admin_sessions).
+// O token é enviado em todo request via o header "x-session-token", e as
+// políticas de RLS de cada tabela verificam esse token através da função
+// `is_admin_session()`. Sem isso, a "autenticação" seria só de fachada no
+// React, e qualquer pessoa com a anon key (pública por natureza no Supabase)
+// poderia escrever direto no banco sem nunca ter feito login.
+const SESSION_TOKEN_KEY = 'session_token';
+
+const getStoredSessionToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(SESSION_TOKEN_KEY);
+};
+
+const buildSupabaseClient = (token: string | null): SupabaseClient =>
+  createClient(supabaseUrl, supabaseAnonKey, token
+    ? { global: { headers: { 'x-session-token': token } } }
+    : undefined);
+
+export let supabase = buildSupabaseClient(getStoredSessionToken());
+
+export const getSessionToken = getStoredSessionToken;
+
+export const setSessionToken = (token: string | null): void => {
+  if (typeof window !== 'undefined') {
+    if (token) {
+      localStorage.setItem(SESSION_TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(SESSION_TOKEN_KEY);
+    }
+  }
+  supabase = buildSupabaseClient(token);
+};
 
 // ========================================
 // FUNÇÕES PARA DEPARTAMENTOS
@@ -163,10 +199,10 @@ export const getUsuariosTelefonia = async (): Promise<Partial<UsuarioTelefonia>[
   return data || [];
 };
 
-export const getUsuarioTelefoniaByEmail = async (email: string): Promise<UsuarioTelefonia | null> => {
+export const getUsuarioTelefoniaByEmail = async (email: string): Promise<Omit<UsuarioTelefonia, 'senha'> | null> => {
   const { data, error } = await supabase
     .from('usuario_telefonia')
-    .select('*')
+    .select('id, nome, email, role, departamento, ativo, ultimo_login, created_at, updated_at')
     .eq('email', email)
     .single();
 
@@ -177,11 +213,13 @@ export const getUsuarioTelefoniaByEmail = async (email: string): Promise<Usuario
   return data;
 };
 
+const USUARIO_TELEFONIA_SAFE_COLUMNS = 'id, nome, email, role, departamento, ativo, ultimo_login, created_at, updated_at';
+
 export const createUsuarioTelefonia = async (usuario: Omit<UsuarioTelefonia, 'id' | 'created_at' | 'updated_at'>) => {
   const { data, error } = await supabase
     .from('usuario_telefonia')
     .insert([usuario])
-    .select()
+    .select(USUARIO_TELEFONIA_SAFE_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -193,7 +231,7 @@ export const updateUsuarioTelefonia = async (id: string, updates: Partial<Usuari
     .from('usuario_telefonia')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select()
+    .select(USUARIO_TELEFONIA_SAFE_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -214,7 +252,7 @@ export const toggleUsuarioTelefoniaStatus = async (id: string, currentStatus: bo
     .from('usuario_telefonia')
     .update({ ativo: !currentStatus, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select()
+    .select(USUARIO_TELEFONIA_SAFE_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -242,6 +280,15 @@ export const loginAdmin = async (email: string, password: string): Promise<Admin
       throw new Error(result?.error || 'Email ou senha inválidos');
     }
 
+    // Guardar o token de sessão emitido pelo banco. Todas as chamadas
+    // administrativas seguintes (criar/editar/excluir) vão enviar esse
+    // token no header "x-session-token", que é o que a RLS de cada tabela
+    // realmente verifica - o login não é mais só uma checagem de tela.
+    if (!result.session_token) {
+      throw new Error('Servidor não retornou token de sessão. Atualize o banco de dados.');
+    }
+    setSessionToken(result.session_token);
+
     const usuario = result.user;
     const now = new Date().toISOString();
 
@@ -264,13 +311,43 @@ export const loginAdmin = async (email: string, password: string): Promise<Admin
   }
 };
 
+// Invalida a sessão atual tanto no banco (admin_sessions) quanto localmente.
+export const logoutAdmin = async (): Promise<void> => {
+  try {
+    await supabase.rpc('logout_admin');
+  } catch (error) {
+    console.error('Error revoking session:', error);
+  } finally {
+    setSessionToken(null);
+  }
+};
+
+// Confirma no banco se o token de sessão guardado ainda é válido. Deve ser
+// chamada ao abrir o painel admin, em vez de confiar apenas na presença de
+// dados no localStorage (que qualquer um pode forjar no navegador).
+export const validateSession = async (): Promise<boolean> => {
+  if (!getSessionToken()) return false;
+
+  try {
+    const { data, error } = await supabase.rpc('validate_session');
+    if (error || !data || !data.valid) return false;
+    return true;
+  } catch (error) {
+    console.error('Error validating session:', error);
+    return false;
+  }
+};
+
 // ========================================
 // FUNÇÕES PARA RAMAIS
 // ========================================
 
+// Leitura pública (dashboard, sem login): usa a view "ramais_publico", que
+// nunca expõe as credenciais SIP (servidor_sip, usuario, dominio, login,
+// senha) - só os campos necessários para exibir o ramal no diretório.
 export const getRamais = async (): Promise<Ramal[]> => {
   const { data, error } = await supabase
-    .from('ramais')
+    .from('ramais_publico')
     .select('*')
     .order('ramal', { ascending: true });
 
@@ -281,10 +358,24 @@ export const getRamais = async (): Promise<Ramal[]> => {
   return data || [];
 };
 
-// Buscar departamentos únicos da tabela ramais
+// Leitura completa (com credenciais SIP) para o painel administrativo.
+// Exige sessão de admin válida - a função no banco rejeita a chamada caso
+// contrário. Use apenas em telas de administração (ex: RamaisManager).
+export const getRamaisCompleto = async (): Promise<Ramal[]> => {
+  const { data, error } = await supabase.rpc('admin_get_ramais');
+
+  if (error) {
+    console.error('Error fetching ramais (admin):', error);
+    return [];
+  }
+  return data || [];
+};
+
+// Buscar departamentos únicos da tabela ramais (usado também na página
+// pública, por isso lê da view "ramais_publico" e não da tabela base).
 export const getDepartamentosFromRamais = async (): Promise<Departamento[]> => {
   const { data: ramais, error } = await supabase
-    .from('ramais')
+    .from('ramais_publico')
     .select('departamento, status')
     .order('departamento', { ascending: true });
 
@@ -357,7 +448,7 @@ export const deleteRamaisByDepartamento = async (departamento: string) => {
 
 export const getRamalByNumber = async (ramal: string): Promise<Ramal | null> => {
   const { data, error } = await supabase
-    .from('ramais')
+    .from('ramais_publico')
     .select('*')
     .eq('ramal', ramal)
     .single();
@@ -371,7 +462,7 @@ export const getRamalByNumber = async (ramal: string): Promise<Ramal | null> => 
 
 export const getRamalsByDepartamento = async (departamento: string): Promise<Ramal[]> => {
   const { data, error } = await supabase
-    .from('ramais')
+    .from('ramais_publico')
     .select('*')
     .eq('departamento', departamento)
     .order('ramal', { ascending: true });

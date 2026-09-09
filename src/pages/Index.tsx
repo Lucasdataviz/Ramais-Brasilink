@@ -130,7 +130,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-50/50 dark:from-gray-950 dark:via-blue-950/20 dark:to-indigo-950/20">
+    <div className="min-h-screen bg-background">
       <div className="flex flex-col min-h-screen">
         <Header
           search={search}
@@ -143,24 +143,13 @@ const Index = () => {
         />
         <NewsTicker />
 
-        <main className="w-full px-4 py-6 relative flex-1">
-
-        <div
-          className="fixed inset-0 opacity-[0.02] dark:opacity-[0.03] blur-sm pointer-events-none -z-10"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 693 893'%3E%3Cg transform='translate(0,893) scale(0.1,-0.1)' fill='%23000000'%3E%3Cpath d='M3 5928 c3 -2696 5 -3004 19 -3103 59 -398 227 -870 439 -1232 311-531 745 -941 1290 -1218 630 -321 1311 -437 1969 -335 567 87 1062 296 1489 628 616 480 1094 1176 1241 1808 19 81 50 291 50 340 l0 24 -747 0 -748 0 -40 -128 c-48 -155 -151 -364 -240 -487 -413 -574 -1135 -853 -1849 -715 -542 105 -1032 473 -1276 960 -330 658 -222 1459 272 2017 153 173 296 278 543 398 206 101 405 165 511 165 l34 0 0 750 c0 739 0 750 -20 750 -44 0 -254 -33 -385 -61 -413 -87 -714 -209 -1052 -426 l-83 -53 0 1455 0 1455 -710 0 -711 0 4 -2992z'/%3E%3Cpath d='M3335 6528 c-4 -230 -3 -392 4 -466 17 -182 16 -182 251 -181 179 0 273 -11 430 -51 439 -112 855 -359 1191 -707 426 -442 671 -993 705 -1584 l7 -116 -134 24 c-74 13 -174 32 -224 41 l-90 17 -13 70 c-7 39 -24 124 -38 190 -128 600 -485 1104 -993 1403 -197 115 -398 190 -726 267 -279 66 -318 60 -352 -54 -14 -48 -17 -111 -17 -421 -1 -381 3 -420 42 -435 10 -3 69 -11 132 -16 323 -28 520 -115 710 -315 84 -88 148 -181 208 -299 48 -98 108 -253 99 -261 -10 -10 -270 15 -472 46 -104 15 -219 31 -255 35 -123 11 -205 27 -365 68 -138 36 -174 42 -265 42 -92 0 -112 -4 -160 -26 -270 -127 -373 -409 -245 -674 62 -127 156 -212 286 -255 54 -18 80 -21 164 -18 86 4 112 9 185 40 47 20 108 41 135 47 28 6 680 90 1450 187 1186 149 1434 177 1620 185 242 11 251 14 290 80 29 49 27 258 -3 421 -47 249 -184 704 -297 979 -276 676 -807 1249 -1520 1642 -484 267 -1148 447 -1646 447 l-87 0 -7 -352z m-23 -2998 l64 -20 24 -81 c23 -80 23 -83 7 -145 -28 -103 -32 -111 -68 -118 -235 -47 -384 25 -366 176 9 74 58 151 122 189 40 25 134 25 217 -1z'/%3E%3C/g%3E%3C/svg%3E")`,
-            backgroundSize: '300px 300px',
-            backgroundRepeat: 'repeat',
-            backgroundPosition: 'center',
-          }}
-        />
+        <main className="w-full max-w-[2000px] mx-auto px-4 md:px-8 py-6 relative flex-1">
 
         {loading || departamentosLoading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-6">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-4 border-blue-100 dark:border-blue-950" />
-              <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-blue-500 animate-spin" />
-              <div className="absolute inset-2 w-12 h-12 rounded-full border-4 border-transparent border-t-indigo-400 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
+            <div className="relative w-14 h-14">
+              <div className="absolute inset-0 rounded-full border-[3px] border-muted" />
+              <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-primary animate-spin" />
             </div>
             <div className="text-center">
               <p className="text-base font-semibold text-foreground">Carregando ramais...</p>
@@ -189,17 +178,20 @@ const Index = () => {
 
                   return (
                     <div key={pai.id} className="mb-6">
-                      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                        <div style={{ color: pai.cor }}>
+                      <h2 className="font-display text-xl font-semibold mb-4 flex items-center gap-2.5 text-foreground">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: `${pai.cor}14`, color: pai.cor }}
+                        >
                           {(() => {
                             const IconComp = getIconComponent(pai.icone) || Building2;
                             const Icon = IconComp as any;
-                            return <Icon className="h-6 w-6" />;
+                            return <Icon className="h-4 w-4" />;
                           })()}
                         </div>
                         {pai.nome}
                       </h2>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
                         {pai.filhos.map((filho) => {
                           const ramaisFilho = extensions.filter(ext => {
                             return ext.department === filho.id ||
@@ -223,9 +215,9 @@ const Index = () => {
                               {isExpanded && (
                                 <div className="mt-2 animate-in slide-in-from-top-3 duration-300 fade-in">
                                   <div className="relative rounded-2xl overflow-hidden glass-card" style={{ borderTop: `4px solid ${filho.cor || '#f1364f'}` }}>
-                                    <div className="flex items-start justify-between px-6 py-5" style={{ background: `linear-gradient(135deg, ${filho.cor}12, ${filho.cor}04)` }}>
+                                    <div className="flex items-start justify-between px-6 py-5 bg-muted/40">
                                       <div className="flex items-center gap-4">
-                                        <div className="p-3 rounded-xl shadow-md" style={{ backgroundColor: `${filho.cor}18`, color: filho.cor }}>
+                                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${filho.cor}14`, color: filho.cor }}>
                                           {(() => {
                                             const IconComp = getIconComponent(filho.icone) || Building2;
                                             const Icon = IconComp as any;
@@ -233,7 +225,7 @@ const Index = () => {
                                           })()}
                                         </div>
                                         <div>
-                                          <h2 className="text-xl font-bold text-foreground">{filho.nome}</h2>
+                                          <h2 className="font-display text-lg font-semibold text-foreground">{filho.nome}</h2>
                                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground">
                                             <Users className="h-3 w-3" />
                                             {ramaisFilho.length} {ramaisFilho.length === 1 ? 'ramal' : 'ramais'}
@@ -244,13 +236,13 @@ const Index = () => {
                                         <X className="h-5 w-5" />
                                       </Button>
                                     </div>
-                                    <div className="p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-4 border-t border-white/5">
+                                    <div className="p-6 grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4 border-t border-border/60">
                                       {ramaisFilho.map((ext) => (
                                         <ExtensionCard key={ext.id} extension={ext} showShortNumber={true} />
                                       ))}
                                     </div>
-                                    <div className="px-6 py-3 flex justify-center border-t border-white/5 bg-white/5">
-                                      <Button variant="ghost" size="sm" onClick={() => toggleDepartment(filho.id)} className="text-xs text-muted-foreground gap-1.5 uppercase tracking-widest font-bold">
+                                    <div className="px-6 py-3 flex justify-center border-t border-border/60">
+                                      <Button variant="ghost" size="sm" onClick={() => toggleDepartment(filho.id)} className="text-xs text-muted-foreground gap-1.5 uppercase tracking-widest font-semibold">
                                         <ChevronUp className="h-4 w-4" /> Recolher
                                       </Button>
                                     </div>

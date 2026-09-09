@@ -39,7 +39,7 @@ export const DepartmentSection = ({
     };
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4 auto-rows-min">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4 auto-rows-min">
             {groupedDepartments.map(({ department, departmentInfo, extensions: deptExtensions }) => {
                 if (deptExtensions.length === 0 || departmentInfo?.departamento_pai) return null;
 
@@ -84,17 +84,16 @@ export const DepartmentSection = ({
                                             {/* Left: icon + name + meta */}
                                             <div className="flex items-center gap-4">
                                                 <div
-                                                    className="p-3 rounded-xl shadow-md shrink-0"
+                                                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
                                                     style={{
-                                                        backgroundColor: `${deptColor}18`,
+                                                        backgroundColor: `${deptColor}14`,
                                                         color: deptColor,
-                                                        boxShadow: `0 4px 16px ${deptColor}30`,
                                                     }}
                                                 >
                                                     {renderIcon()}
                                                 </div>
                                                 <div className="flex flex-col gap-1.5">
-                                                    <h2 className="text-xl font-bold text-foreground leading-tight">
+                                                    <h2 className="font-display text-lg font-semibold text-foreground leading-tight">
                                                         {departmentInfo?.nome || department}
                                                     </h2>
                                                     <div className="flex flex-wrap items-center gap-2">
@@ -152,7 +151,7 @@ export const DepartmentSection = ({
 
                                     {/* Extension cards grid */}
                                     <div className="p-6 max-h-[70vh] overflow-y-auto">
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
                                             {deptExtensions.map((ext) => (
                                                 <ExtensionCard key={ext.id} extension={ext} showShortNumber={true} />
                                             ))}

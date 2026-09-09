@@ -12,6 +12,7 @@ Ou configure como webhook/cron job para atualizar automaticamente.
 import os
 import sys
 import subprocess
+import ipaddress
 import requests
 import json
 import yaml
@@ -19,18 +20,34 @@ from pathlib import Path
 
 # Configurações
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://zamksbryvuuaxxwszdgc.supabase.co')
-SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY', '')
+# IMPORTANTE: este script roda no servidor e precisa ignorar o RLS para ler
+# ips_permitidos, que não é mais uma tabela pública. Use a SERVICE ROLE KEY
+# (Supabase > Settings > API), nunca a anon key usada pelo frontend.
+SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
 TRAEFIK_DYNAMIC_CONFIG_PATH = os.getenv('TRAEFIK_DYNAMIC_CONFIG_PATH', '/etc/traefik/dynamic/ipwhitelist.yml')
 COOLIFY_PROXY_PATH = os.getenv('COOLIFY_PROXY_PATH', '/data/coolify/proxy')
 BACKUP_PATH = os.getenv('BACKUP_PATH', '/tmp/traefik-ipwhitelist.backup.yml')
 
+def is_valid_ip_or_cidr(value: str) -> bool:
+    """Valida IPv4/IPv6 ou CIDR antes de gravar na config do Traefik. Não
+    confiar apenas na validação do frontend, que pode ser contornada por
+    quem chama a API REST diretamente."""
+    try:
+        ipaddress.ip_network(value, strict=False)
+        return True
+    except ValueError:
+        return False
+
 def get_allowed_ips():
     """Busca IPs permitidos do Supabase"""
+    if not SUPABASE_SERVICE_ROLE_KEY:
+        print("Erro: SUPABASE_SERVICE_ROLE_KEY não configurada!", file=sys.stderr)
+        return []
     try:
         url = f"{SUPABASE_URL}/rest/v1/ips_permitidos"
         headers = {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': f'Bearer {SUPABASE_ANON_KEY}',
+            'apikey': SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': f'Bearer {SUPABASE_SERVICE_ROLE_KEY}',
             'Content-Type': 'application/json',
             'Prefer': 'return=representation'
         }
@@ -38,10 +55,10 @@ def get_allowed_ips():
             'ativo': 'eq.true',
             'select': 'ip,descricao'
         }
-        
+
         response = requests.get(url, headers=headers, params=params, timeout=10)
         response.raise_for_status()
-        
+
         ips_data = response.json()
         return ips_data
     except Exception as e:
@@ -50,24 +67,20 @@ def get_allowed_ips():
 
 def generate_traefik_config(ips_data):
     """Gera a configuração do Traefik para IP Whitelist"""
-    if not ips_data:
-        print("Nenhum IP ativo encontrado. Bloqueando todos os IPs.", file=sys.stderr)
-        # Retornar configuração que bloqueia tudo
-        return {
-            'http': {
-                'middlewares': {
-                    'ipwhitelist': {
-                        'ipWhiteList': {
-                            'sourceRange': []
-                        }
-                    }
-                }
-            }
-        }
-    
-    # Extrair IPs
-    source_ranges = [ip_data.get('ip') for ip_data in ips_data if ip_data.get('ip')]
-    
+    # Extrair e validar IPs antes de colocá-los na config
+    source_ranges = []
+    for ip_data in ips_data:
+        ip = (ip_data.get('ip') or '').strip()
+        if not ip:
+            continue
+        if not is_valid_ip_or_cidr(ip):
+            print(f"Ignorando valor inválido na lista de IPs: {ip!r}", file=sys.stderr)
+            continue
+        source_ranges.append(ip)
+
+    if not source_ranges:
+        print("Nenhum IP ativo válido encontrado. Bloqueando todos os IPs.", file=sys.stderr)
+
     config = {
         'http': {
             'middlewares': {
@@ -79,7 +92,7 @@ def generate_traefik_config(ips_data):
             }
         }
     }
-    
+
     return config
 
 def update_traefik_config(new_config):
@@ -113,7 +126,10 @@ def update_coolify_labels(ips_data):
         # No Coolify, as configurações são feitas via labels Docker
         # Este método atualiza um arquivo que pode ser usado para recriar o container
         
-        source_ranges = [ip_data.get('ip') for ip_data in ips_data if ip_data.get('ip')]
+        source_ranges = [
+            ip_data.get('ip') for ip_data in ips_data
+            if ip_data.get('ip') and is_valid_ip_or_cidr(ip_data['ip'])
+        ]
         source_ranges_str = ','.join(source_ranges)
         
         # Criar arquivo com labels para usar no docker-compose ou Coolify
@@ -172,8 +188,8 @@ def reload_traefik():
 
 def main():
     """Função principal"""
-    if not SUPABASE_ANON_KEY:
-        print("Erro: SUPABASE_ANON_KEY não configurada!", file=sys.stderr)
+    if not SUPABASE_SERVICE_ROLE_KEY:
+        print("Erro: SUPABASE_SERVICE_ROLE_KEY não configurada!", file=sys.stderr)
         sys.exit(1)
     
     print("Buscando IPs permitidos do Supabase...")

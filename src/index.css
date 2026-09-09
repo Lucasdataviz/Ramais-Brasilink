@@ -2,98 +2,118 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Lexend:wght@500;600;700;800&display=swap');
 
-/* Design System - All colors in HSL */
+/* ============================================================
+   Design System — Premium Clean
+   Fundo claro, muito espaço, cards com sombra suave, um único
+   acento (azul). Cores sempre em HSL para funcionar com Tailwind.
+   ============================================================ */
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 222 47% 11%;
+    --background: 210 24% 98%;
+    --foreground: 222 44% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 222 44% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 222 44% 13%;
 
-    --primary: 224 76% 48%;
+    --primary: 221 75% 48%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 214 28% 93%;
+    --secondary-foreground: 222 30% 22%;
 
-    --muted: 214 20% 94%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 214 22% 95%;
+    --muted-foreground: 215 16% 46%;
 
-    --accent: 262 80% 58%;
+    --accent: 221 75% 48%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 152 60% 36%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 38 92% 46%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 224 76% 48%;
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 221 75% 48%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 224 76% 48%;
+    /* Sombras — uma escala consistente, sempre a partir do mesmo tom */
+    --shadow-color: 222 47% 20%;
+    --shadow-sm: 0 1px 2px hsl(var(--shadow-color) / 0.06);
+    --shadow-md: 0 2px 8px hsl(var(--shadow-color) / 0.07), 0 1px 2px hsl(var(--shadow-color) / 0.06);
+    --shadow-lg: 0 12px 28px hsl(var(--shadow-color) / 0.10), 0 2px 6px hsl(var(--shadow-color) / 0.06);
+    --shadow-xl: 0 24px 48px hsl(var(--shadow-color) / 0.14), 0 4px 12px hsl(var(--shadow-color) / 0.08);
+
+    --sidebar-background: 222 47% 10%;
+    --sidebar-foreground: 210 30% 96%;
+    --sidebar-primary: 221 75% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 32% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 32% 17%;
-    --sidebar-ring: 224 76% 48%;
+    --sidebar-accent: 222 32% 16%;
+    --sidebar-accent-foreground: 210 30% 96%;
+    --sidebar-border: 222 32% 17%;
+    --sidebar-ring: 221 75% 55%;
   }
 
   .dark {
-    --background: 224 40% 6%;
-    --foreground: 213 31% 91%;
+    --background: 224 38% 7%;
+    --foreground: 213 28% 93%;
 
-    --card: 224 36% 9%;
-    --card-foreground: 213 31% 91%;
+    --card: 223 32% 10%;
+    --card-foreground: 213 28% 93%;
 
-    --popover: 224 36% 9%;
-    --popover-foreground: 213 31% 91%;
+    --popover: 223 32% 10%;
+    --popover-foreground: 213 28% 93%;
 
-    --primary: 224 76% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 217 91% 62%;
+    --primary-foreground: 222 47% 8%;
 
-    --secondary: 217 32% 17%;
-    --secondary-foreground: 213 31% 91%;
+    --secondary: 217 26% 16%;
+    --secondary-foreground: 213 28% 93%;
 
-    --muted: 217 32% 13%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 217 24% 14%;
+    --muted-foreground: 215 16% 60%;
 
-    --accent: 262 70% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 217 91% 62%;
+    --accent-foreground: 222 47% 8%;
 
-    --destructive: 0 63% 35%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 210 40% 98%;
 
-    --success: 142 60% 40%;
+    --success: 152 55% 45%;
     --success-foreground: 0 0% 100%;
 
-    --border: 217 32% 16%;
-    --input: 217 32% 16%;
-    --ring: 224 76% 58%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 222 47% 8%;
 
-    --sidebar-background: 240 6% 10%;
-    --sidebar-foreground: 240 5% 96%;
-    --sidebar-primary: 224 76% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4% 16%;
-    --sidebar-accent-foreground: 240 5% 96%;
-    --sidebar-border: 240 4% 16%;
-    --sidebar-ring: 224 76% 58%;
+    --border: 217 26% 17%;
+    --input: 217 26% 17%;
+    --ring: 217 91% 62%;
+
+    --shadow-color: 222 60% 2%;
+    --shadow-sm: 0 1px 2px hsl(var(--shadow-color) / 0.4);
+    --shadow-md: 0 2px 10px hsl(var(--shadow-color) / 0.45);
+    --shadow-lg: 0 16px 32px hsl(var(--shadow-color) / 0.55);
+    --shadow-xl: 0 28px 56px hsl(var(--shadow-color) / 0.6);
+
+    --sidebar-background: 224 32% 7%;
+    --sidebar-foreground: 213 28% 93%;
+    --sidebar-primary: 217 91% 62%;
+    --sidebar-primary-foreground: 222 47% 8%;
+    --sidebar-accent: 217 26% 14%;
+    --sidebar-accent-foreground: 213 28% 93%;
+    --sidebar-border: 217 26% 15%;
+    --sidebar-ring: 217 91% 62%;
   }
 }
 
@@ -111,63 +131,85 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  h1, h2, h3, .font-display {
+    font-family: 'Lexend', 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.18);
+  }
 }
 
 @layer utilities {
-  /* Glass morphism effect */
+  /* ------------------------------------------------------------
+     Cartão padrão do sistema: fundo sólido, borda fina, sombra
+     suave. Substitui o antigo efeito "glassmorphism" — o nome da
+     classe foi mantido para não precisar tocar em cada componente.
+     ------------------------------------------------------------ */
   .glass {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-  }
-
-  .dark .glass {
-    background: rgba(15, 20, 40, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    @apply bg-card border border-border;
   }
 
   .glass-card {
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(20px) saturate(200%);
-    -webkit-backdrop-filter: blur(20px) saturate(200%);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--shadow-md);
   }
 
-  .dark .glass-card {
-    background: rgba(20, 27, 55, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
+  /* Elevação sutil ao passar o mouse — sem "saltar" ou escalar,
+     só sombra mais forte e borda levemente mais visível. */
+  .card-lift {
+    transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
   }
 
-  /* Glow effects */
+  .card-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: hsl(var(--border));
+  }
+
+  .surface-1 {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .surface-2 {
+    box-shadow: var(--shadow-md);
+  }
+
+  .surface-3 {
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Halo de foco discreto, usado no lugar dos antigos glows neon */
+  .focus-ring {
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.14);
+  }
+
   .glow-blue {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12);
   }
 
   .glow-purple {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 0 60px rgba(139, 92, 246, 0.1);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12);
   }
 
-  /* Animated gradient background */
   .gradient-bg {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(221 83% 38%) 100%);
   }
 
-  /* Shimmer animation */
   @keyframes shimmer {
     0% { background-position: -200% center; }
     100% { background-position: 200% center; }
   }
 
   .shimmer {
-    background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.4) 50%, transparent 75%);
+    background: linear-gradient(90deg, transparent 25%, hsl(0 0% 100% / 0.4) 50%, transparent 75%);
     background-size: 200% 100%;
     animation: shimmer 2s infinite;
   }
 
-  /* Floating animation */
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-6px); }
@@ -177,28 +219,32 @@
     animation: float 3s ease-in-out infinite;
   }
 
-  /* Pulse ring */
   @keyframes pulse-ring {
-    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
-    70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45); }
+    70% { box-shadow: 0 0 0 10px hsl(var(--primary) / 0); }
+    100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
   }
 
   .pulse-ring {
     animation: pulse-ring 2s infinite;
   }
 
-  /* Card hover lift */
-  .card-lift {
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  /* Scrollbar fina e discreta, coerente com o resto do sistema */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
 
-  .card-lift:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08);
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
   }
 
-  .dark .card-lift:hover {
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 8px 16px rgba(0, 0, 0, 0.3);
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
   }
 }

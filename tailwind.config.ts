@@ -13,6 +13,16 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Lexend", "Inter", "system-ui", "sans-serif"],
+      },
+      boxShadow: {
+        xs: "var(--shadow-sm)",
+        card: "var(--shadow-md)",
+        "card-lg": "var(--shadow-lg)",
+        "card-xl": "var(--shadow-xl)",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
