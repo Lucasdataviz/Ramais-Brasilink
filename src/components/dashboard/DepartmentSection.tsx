@@ -151,7 +151,7 @@ export const DepartmentSection = ({
 
                                     {/* Extension cards grid */}
                                     <div className="p-6 max-h-[70vh] overflow-y-auto">
-                            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
+                            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
                                             {deptExtensions.map((ext) => (
                                                 <ExtensionCard key={ext.id} extension={ext} showShortNumber={true} />
                                             ))}

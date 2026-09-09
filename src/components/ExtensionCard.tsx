@@ -1,5 +1,5 @@
 import { Extension } from '@/lib/types';
-import { Phone, Copy, PhoneCall, CheckCircle2, XCircle, Wrench } from 'lucide-react';
+import { Phone, Copy, PhoneCall } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ExtensionCardProps {
@@ -27,9 +27,6 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
     const s = status.toLowerCase();
     if (s === 'active' || s === 'ativo') {
       return {
-        label: 'Ativo',
-        dot: 'bg-emerald-400',
-        pill: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20',
         accent: 'from-emerald-400 to-teal-400',
         numberBg: 'bg-blue-50/80 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20',
         numberText: 'text-blue-700 dark:text-blue-300',
@@ -41,9 +38,6 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
       };
     } else if (s === 'maintenance' || s === 'manutenção') {
       return {
-        label: 'Manutenção',
-        dot: 'bg-amber-400',
-        pill: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20',
         accent: 'from-amber-400 to-orange-400',
         numberBg: 'bg-muted/60 border-border/40',
         numberText: 'text-muted-foreground',
@@ -56,9 +50,6 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
     }
     // inactive / default
     return {
-      label: 'Inativo',
-      dot: 'bg-gray-400',
-      pill: 'bg-gray-100 text-gray-500 ring-gray-200 dark:bg-gray-700/40 dark:text-gray-400 dark:ring-gray-600/30',
       accent: 'from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700',
       numberBg: 'bg-muted/60 border-border/40',
       numberText: 'text-muted-foreground',
@@ -129,25 +120,13 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
 
           {/* Name + description */}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground leading-tight truncate">
+            <p className="text-sm font-bold text-foreground leading-snug break-words">
               {extension.name}
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5 truncate leading-tight">
               {extension.metadata?.descricao || extension.department || 'Sem descrição'}
             </p>
           </div>
-
-          {/* Status pill */}
-          <span
-            className={`
-              shrink-0 inline-flex items-center gap-1 px-2 py-0.5
-              rounded-full text-[10px] font-semibold ring-1 ring-inset
-              ${cfg.pill}
-            `}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${cfg.isActive ? 'animate-pulse' : ''}`} />
-            {cfg.label}
-          </span>
         </div>
 
         {/* ── Row 2: Phone number block ── */}
@@ -158,12 +137,12 @@ export const ExtensionCard = ({ extension, showShortNumber = false }: ExtensionC
           `}
         >
           <cfg.PhoneIcon className={`h-3.5 w-3.5 shrink-0 ${cfg.phoneIcon}`} />
-          <span className={`flex-1 font-mono font-bold text-base tracking-widest ${cfg.numberText}`}>
+          <span className={`flex-1 min-w-0 truncate font-mono font-bold text-base tracking-wide ${cfg.numberText}`}>
             {displayNumber}
           </span>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 shrink-0">
             {/* Call */}
             <button
               onClick={handleCall}

@@ -236,7 +236,7 @@ const Index = () => {
                                         <X className="h-5 w-5" />
                                       </Button>
                                     </div>
-                                    <div className="p-6 grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4 border-t border-border/60">
+                                    <div className="p-6 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 border-t border-border/60">
                                       {ramaisFilho.map((ext) => (
                                         <ExtensionCard key={ext.id} extension={ext} showShortNumber={true} />
                                       ))}
